@@ -20,6 +20,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
+      
   }
 
   // Obtener datos del usuario
