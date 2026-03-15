@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import Login from "@/pages/auth/Login"
+import { Navigate } from "react-router-dom"
 
 interface Props {
   session: any
@@ -9,7 +9,7 @@ interface Props {
 export default function ProtectedRoute({ session, children }: Props) {
 
   if (!session) {
-    return <Login />
+    return <Navigate to="/login" replace />
   }
 
   return <>{children}</>

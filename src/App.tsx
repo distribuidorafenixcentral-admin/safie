@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react"
+import { Routes, Route } from "react-router-dom"
 import Dashboard from "@/pages/dashboard/Dashboard"
+import Login from "@/pages/auth/Login"
 import { supabase } from "@/lib/supabase"
 import Loader from "@/components/ui/Loader"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
@@ -12,7 +14,6 @@ function App() {
   useEffect(() => {
 
     const init = async () => {
-
       const { data } = await supabase.auth.getSession()
       setSession(data.session)
 
@@ -38,9 +39,22 @@ function App() {
   if (loading) return <Loader />
 
   return (
-    <ProtectedRoute session={session}>
-      <Dashboard />
-    </ProtectedRoute>
+    <Routes>
+
+      {/* Ruta pública */}
+      <Route path="/login" element={<Login />} />
+
+      {/* Ruta protegida */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute session={session}>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+    </Routes>
   )
 }
 
