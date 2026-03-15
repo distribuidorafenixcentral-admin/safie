@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
 import Dashboard from "@/pages/dashboard/Dashboard"
-import Login from "@/pages/auth/Login"
 import { supabase } from "@/lib/supabase"
 import Loader from "@/components/ui/Loader"
+import ProtectedRoute from "@/components/auth/ProtectedRoute"
 
 function App() {
 
@@ -16,10 +16,9 @@ function App() {
       const { data } = await supabase.auth.getSession()
       setSession(data.session)
 
-      // Delay garantizado (prueba)
       setTimeout(() => {
         setLoading(false)
-      }, 2000) // 2 segundo
+      }, 2000)
     }
 
     init()
@@ -38,7 +37,11 @@ function App() {
 
   if (loading) return <Loader />
 
-  return session ? <Dashboard /> : <Login />
+  return (
+    <ProtectedRoute session={session}>
+      <Dashboard />
+    </ProtectedRoute>
+  )
 }
 
 export default App
