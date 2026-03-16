@@ -7,6 +7,7 @@ import {
   FilePlusCorner
 } from "lucide-react"
 import { useState } from "react"
+import { Link } from "react-router-dom"
 
 type Props = {
   collapsed: boolean
@@ -26,42 +27,43 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
       name: "Registros",
       icon: FilePlusCorner,
        children: [
-        { name: "Nueva Sucursal" },
-        { name: "Nuevo Personal" },
-        { name: "Depósito"},
-        { name: "Vehiculo"},
-        { name: "Cliente"}   
+        { name: "Nueva Sucursal", path: "/dashboard/sucursal" },
+        { name: "Nuevo Personal", path: "/dashboard/personal" },
+        { name: "Transaccion", path: "/dashboard/transaccion"},
+        { name: "Depósito", path: "/regdeposito"},
+        { name: "Vehiculo", path: "/vehiculo"},
+        { name: "Cliente", path: "/cliente"}   
       ]
     },
     {
       name: "Transacciones",
       icon: ArrowLeftRight,
       children: [
-        { name: "Deposito" },
-        { name: "Pago Deudas"},
-        { name: "Memos / sanciones"},      
-        { name: "Pago Comisiones" },
-        { name: "Pago Sueldos" },
-        { name: "Pago Servicios" },
-        { name: "Pago Alquileres"},
-        { name: "Material de escritorio"},
-        { name: "Material de limpieza"},
-        { name: "Compras varias"},
-        { name: "Devoluciones"}
+        { name: "Deposito", path: "/deposito" },
+        { name: "Pago Deudas", path: "/deudas"},
+        { name: "Memos / sanciones", path: "/sancines"},      
+        { name: "Pago Comisiones", path: "/comisiones" },
+        { name: "Pago Sueldos", path: "/sueldos" },
+        { name: "Pago Servicios", path: "/servicios" },
+        { name: "Pago Alquileres", path: "/alquileres"},
+        { name: "Material de escritorio", path: "/matescritorio"},
+        { name: "Material de limpieza", path: "/matlimpieza"},
+        { name: "Compras varias", path: "/varios"},
+        { name: "Devoluciones", path: "/devoluciones"}
       ]
     },
     {
       name: "Reportes",
       icon: FileText,
       children: [
-        { name: "Cierre diario" },
-        { name: "Sucursales" },
-        { name: "Personal" },
-        { name: "Movimiento General"},
-        { name: "Depósitos" },
-        { name: "Gastos" },
-        { name: "Clientes"},
-        { name: "Vehiculos"}
+        { name: "Cierre diario", path: "/cierre" },
+        { name: "Sucursales", path: "/repsucursales" },
+        { name: "Personal", path: "/reopersonal" },
+        { name: "Movimiento General", path: "/repmovgeneral"},
+        { name: "Depósitos", path: "/repdepositos" },
+        { name: "Gastos", path: "/repgastos" },
+        { name: "Clientes", path: "/repclientes"},
+        { name: "Vehiculos", path: "/repvehiculos"}
       ]
     } 
   ]
@@ -142,12 +144,13 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
 
                   {item.children.map((sub, i) => (
 
-                    <a
-                      key={i}
-                      className="text-sm text-gray-300 hover:text-white hover:bg-gray-800 p-2 rounded"
-                    >
-                      {sub.name}
-                    </a>
+                    <Link
+                        key={i}
+                        to={sub.path || "#"}
+                        className="text-sm text-gray-300 hover:text-white hover:bg-gray-800 p-2 rounded"
+                      >
+                        {sub.name}
+                    </Link>
 
                   ))}
 

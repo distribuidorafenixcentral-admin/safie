@@ -1,5 +1,6 @@
 import DashboardLayout from "@/layouts/DashboardLayout"
 import StatCard from "@/components/cards/StarCard"
+import { Outlet, useLocation } from "react-router-dom"
 
 import {
   ArrowDownCircle,
@@ -13,11 +14,15 @@ import {
 
 export default function Dashboard() {
 
+  const location = useLocation()
+
+  const showCards = location.pathname === "/dashboard"
+
   return (
 
     <DashboardLayout>
-     {/* stadistcs Cards */}
-    <div>    
+     
+     {showCards ? (     
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
@@ -90,9 +95,8 @@ export default function Dashboard() {
             
           />
         </div>
-
-    </div>
-           
+        
+     ) : ( <Outlet/> )}
 
     </DashboardLayout>
 
