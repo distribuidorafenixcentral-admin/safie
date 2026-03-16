@@ -1,2 +1,2 @@
 # implementacion autenticacion
-# implementacion loader
+# implementacion registro de personal
