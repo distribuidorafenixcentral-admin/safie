@@ -139,6 +139,7 @@ export default function PersonalTable({ data }: { data: Personal[] }) {
         </tbody>
 
       </table>
+      
 
 
       {/* PAGINACION */}
