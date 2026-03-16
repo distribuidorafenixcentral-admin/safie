@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
-import { Plus, FileText, FileSpreadsheet, Pencil, Eye, Trash } from "lucide-react"
+import { Plus, FileText, FileSpreadsheet } from "lucide-react"
+
+import PersonalTable from "./PersonalTable"
 
 export default function Personal() {
 
@@ -21,9 +23,9 @@ export default function Personal() {
         id_branch ( name_branch ),
         id_role ( role )
       `)
-      .order("id", {ascending: true})
+      .order("id", { ascending: false })
       .neq("id_role", 1)
-      .limit(5)
+      .limit(10)
 
     if (error) {
       console.error(error)
@@ -38,17 +40,20 @@ export default function Personal() {
   )
 
   return (
-    <div >
 
-      <div className="flex justify-between items-center mb-6">
+    <div>
 
-        <h1 className="text-2xl font-bold">
+      {/* TITULO + BOTONES */}
+
+      <div className="flex justify-between items-center mb-2">
+
+        <h1 className="text-xl font-bold">
           REGISTRO DE PERSONAL
         </h1>
 
         <div className="flex gap-3">
 
-          <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded">
+          <button className="flex items-center gap-2 bg-blue-600 text-white px-4 rounded">
             <Plus size={18}/>
             Nuevo
           </button>
@@ -67,7 +72,10 @@ export default function Personal() {
 
       </div>
 
-      <div className="mb-6">
+
+      {/* BUSCADOR */}
+
+      <div className="mb-2">
 
         <input
           type="text"
@@ -79,63 +87,12 @@ export default function Personal() {
 
       </div>
 
-      <div className="bg-white rounded shadow overflow-hidden">
 
-        <table className="w-full text-sm">
+      {/* TABLA */}
 
-          <thead className="bg-gray-100">
+      <div className="bg-white rounded shadow p-4">
 
-            <tr>
-              <th className="p-3 text-left">ID</th>
-              <th className="p-3 text-left">Nombre</th>
-              <th className="p-3 text-left">Sucursal</th>
-              <th className="p-3 text-left">Rol</th>
-              <th className="p-3 text-left">Acciones</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            {filtered.map((p) => (
-
-              <tr key={p.id} className="border-t hover:bg-gray-50">
-
-                <td className="p-3">{p.id}</td>
-
-                <td className="p-3">{p.name}</td>
-
-                <td className="p-3">
-                  {p.id_branch?.name_branch}
-                </td>
-
-                <td className="p-3">
-                  {p.id_role?.role}
-                </td>
-
-                <td className="p-3 flex gap-3">
-
-                  <button className="text-blue-600">
-                    <Eye size={18}/>
-                  </button>
-
-                  <button className="text-green-600">
-                    <Pencil size={18}/>
-                  </button>
-
-                  <button className="text-red-600">
-                    <Trash size={18}/>
-                  </button>
-
-                </td>
-
-              </tr>
-
-            ))}
-
-          </tbody>
-
-        </table>
+        <PersonalTable data={filtered} />
 
       </div>
 
