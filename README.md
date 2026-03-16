@@ -4,3 +4,4 @@
 # Agregamos todas las paginas de registro
 # abrir el modal de registro de personal
 # Formulario de registro de personal dentro del modal
+# Ver, editar y eliminar
