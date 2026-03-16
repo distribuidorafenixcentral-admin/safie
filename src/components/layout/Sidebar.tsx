@@ -30,9 +30,9 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
         { name: "Nueva Sucursal", path: "/dashboard/sucursal" },
         { name: "Nuevo Personal", path: "/dashboard/personal" },
         { name: "Transaccion", path: "/dashboard/transaccion"},
-        { name: "Depósito", path: "/regdeposito"},
-        { name: "Vehiculo", path: "/vehiculo"},
-        { name: "Cliente", path: "/cliente"}   
+        { name: "Depósito", path: "/dashboard/regdeposito"},
+        { name: "Vehiculo", path: "/dashboard/vehiculo"},
+        { name: "Cliente", path: "/dashboard/cliente"}   
       ]
     },
     {

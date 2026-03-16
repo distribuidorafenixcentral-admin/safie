@@ -6,6 +6,9 @@ import Sucursal from "./pages/sucursal/Sucursal"
 import { supabase } from "@/lib/supabase"
 import { Routes, Route, Navigate } from "react-router-dom"
 import Transaccion from "./pages/transaccion/Transaccion"
+import Regdeposito from "./pages/regdeposito/Regdeposito"
+import Vehiculo from "./pages/vehiculo/Vehiculo"
+import Cliente from "./pages/cliente/Cliente"
 
 function App() {
 
@@ -59,6 +62,22 @@ function App() {
         <Route
           path="transaccion"
           element={<Transaccion />}
+        />
+        {/* Página Registo Depósito dentro del Dashboard */}
+        <Route
+          path="regdeposito"
+          element={<Regdeposito />}
+        />
+         {/* Página Registro de Vehículo dentro del Dashboard */}
+        <Route
+          path="vehiculo"
+          element={<Vehiculo />}
+        />
+
+         {/* Página Registo de cliente dentro del Dashboard */}
+        <Route
+          path="cliente"
+          element={<Cliente />}
         />
 
       </Route>
