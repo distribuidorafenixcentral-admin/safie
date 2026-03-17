@@ -4,4 +4,9 @@
 # Agregamos todas las paginas de registro
 # abrir el modal de registro de personal
 # Formulario de registro de personal dentro del modal
-# Ver, editar y eliminar
+# validacion campos obligatorios
+# validacion usuario registrado
+# error de base de datos
+# mensajes emergente en error y exito
+# boton esc para cerrar el modal
+# ver, editar y eliminar (cambiar el estado de status)
