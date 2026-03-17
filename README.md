@@ -10,3 +10,4 @@
 # mensajes emergente en error y exito
 # boton esc para cerrar el modal
 # ver, editar y eliminar (cambiar el estado de status)
+# exportacion pdf y excel
