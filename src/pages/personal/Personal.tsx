@@ -14,6 +14,8 @@ export default function Personal() {
   const [roles, setRoles] = useState<any[]>([])
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
+  const [mode, setMode] = useState<"create" | "view" | "edit">("create")
+  const [selected, setSelected] = useState<any>(null)
 
   const [form, setForm] = useState({
     ci: "",
@@ -32,39 +34,30 @@ export default function Personal() {
     fetchRoles()
   }, [])
 
-    useEffect(() => {
-
+  // mensajes automáticos
+  useEffect(() => {
     if (message) {
-
       const timer = setTimeout(() => {
         setMessage("")
-      }, 2000) // 2 segundos
-
+      }, 2000)
       return () => clearTimeout(timer)
-
     }
-
   }, [message])
 
+  // cerrar modal con ESC
   useEffect(() => {
-
-  const handleEsc = (e: KeyboardEvent) => {
-
-    if (e.key === "Escape") {
-      setOpenModal(false)
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpenModal(false)
+      }
     }
 
-  }
-  
-  
+    window.addEventListener("keydown", handleEsc)
 
-  window.addEventListener("keydown", handleEsc)
-
-  return () => {
-    window.removeEventListener("keydown", handleEsc)
-  }
-
-}, [])
+    return () => {
+      window.removeEventListener("keydown", handleEsc)
+    }
+  }, [])
 
   const fetchPersonal = async () => {
 
@@ -74,11 +67,16 @@ export default function Personal() {
         id,
         ci,
         name,
-        id_branch ( name_branch ),
-        id_role ( role )
+        celphone,
+        stard_date,
+        reference,
+        celphon_ref,
+        id_branch ( id, name_branch ),
+        id_role ( id, role )
       `)
       .order("id", { ascending: false })
       .neq("id_branch", 1)
+      .neq("status", 2)
 
     if (error) console.error(error)
 
@@ -121,51 +119,68 @@ export default function Personal() {
 
   }
 
-  const handleSubmit = async () => {
-      
-      // Validación de campos
-      if (
-        !form.ci ||
-        !form.name ||
-        !form.celphone ||
-        !form.stard_date ||
-        !form.id_branch ||
-        !form.id_role ||
-        !form.reference ||
-        !form.celphon_ref
-      ) {
-        setMessage("Todos los campos son obligatorios")
-        setMessageType("error")
-        return
-      }
+  const resetForm = () => {
+    setForm({
+      ci: "",
+      name: "",
+      celphone: "",
+      stard_date: "",
+      id_branch: "",
+      id_role: "",
+      reference: "",
+      celphon_ref: ""
+    })
+  }
 
-      // Validación de llave primaria duplicada (ci=> carnet de identidad)
+  const handleSubmit = async () => {
+
+    // VALIDACIÓN
+    if (
+      !form.ci ||
+      !form.name ||
+      !form.celphone ||
+      !form.stard_date ||
+      !form.id_branch ||
+      !form.id_role ||
+      !form.reference ||
+      !form.celphon_ref
+    ) {
+      setMessage("Todos los campos son obligatorios")
+      setMessageType("error")
+      return
+    }
+
+    // VALIDAR DUPLICADO SOLO EN CREATE
+    if (mode === "create") {
       const { data: existing } = await supabase
         .from("team")
         .select("ci")
         .eq("ci", form.ci)
 
-     if (existing && existing.length > 0) {
+      if (existing && existing.length > 0) {
         setMessage("El CI ya está registrado")
         setMessageType("error")
         return
       }
-       
-      // Si se pasa la validación, se guarda recien
+    }
+
+    // CREATE
+    if (mode === "create") {
+
       const { error } = await supabase
-      .from("team")       
-      .insert({
-        ci: form.ci,
-        name: form.name,
-        celphone: form.celphone,
-        stard_date: form.stard_date,
-        id_branch: form.id_branch,
-        id_role: form.id_role,
-        reference: form.reference,
-        celphon_ref: form.celphon_ref,
-        status: 1,
-        user_id: null
-      })
+        .from("team")
+        .insert({
+          ci: form.ci,
+          name: form.name,
+          celphone: form.celphone,
+          stard_date: form.stard_date,
+          id_branch: form.id_branch,
+          id_role: form.id_role,
+          reference: form.reference,
+          celphon_ref: form.celphon_ref,
+          status: 1,
+          user_id: null
+        })
 
       if (error) {
         setMessage("Error al guardar")
@@ -173,30 +188,105 @@ export default function Personal() {
         return
       }
 
-    setMessage("Registro guardado correctamente")
+      setMessage("Registro guardado correctamente")
+    }
+
+    // UPDATE
+    if (mode === "edit" && selected) {
+
+      const { error } = await supabase
+        .from("team")
+        .update({
+          name: form.name,
+          celphone: form.celphone,
+          stard_date: form.stard_date,
+          id_branch: form.id_branch,
+          id_role: form.id_role,
+          reference: form.reference,
+          celphon_ref: form.celphon_ref
+        })
+        .eq("id", selected.id)
+
+      if (error) {
+        setMessage("Error al actualizar")
+        setMessageType("error")
+        return
+      }
+
+      setMessage("Registro actualizado correctamente")
+    }
+
     setMessageType("success")
 
-    // se cerrara despues de 1.5 segundos
     setTimeout(() => {
-
       setOpenModal(false)
-
-      setForm({
-        ci: "",
-        name: "",
-        celphone: "",
-        stard_date: "",
-        id_branch: "",
-        id_role: "",
-        reference: "",
-        celphon_ref: ""
-      })
-
+      resetForm()
+      setSelected(null)
+      setMode("create")
       setMessage("")
       setMessageType("")
-
     }, 1500)
 
+    fetchPersonal()
+
+  }
+
+  const handleView = (row:any) => {
+
+    setSelected(row)
+    setMode("view")
+
+    setForm({
+      ci: row.ci || "",
+      name: row.name || "",
+      celphone: row.celphone || "",
+      stard_date: row.stard_date || "",
+      id_branch: row.id_branch?.id || "",
+      id_role: row.id_role?.id || "",
+      reference: row.reference || "",
+      celphon_ref: row.celphon_ref || ""
+    })
+
+    setOpenModal(true)
+
+  }
+
+  const handleEdit = (row:any) => {
+
+    setSelected(row)
+    setMode("edit")
+
+    setForm({
+      ci: row.ci || "",
+      name: row.name || "",
+      celphone: row.celphone || "",
+      stard_date: row.stard_date || "",
+      id_branch: row.id_branch?.id || "",
+      id_role: row.id_role?.id || "",
+      reference: row.reference || "",
+      celphon_ref: row.celphon_ref || ""
+    })
+
+    setOpenModal(true)
+
+  }
+
+  const handleDelete = async (row:any) => {
+
+    const confirmDelete = confirm("¿Eliminar este registro?")
+    if (!confirmDelete) return
+
+    const { error } = await supabase
+      .from("team")
+      .update({ status: 2 })
+      .eq("id", row.id)
+
+    if (error) {
+      setMessage("Error al eliminar")
+      return
+    }
+
+    setMessage("Registro eliminado")
     fetchPersonal()
 
   }
@@ -210,23 +300,20 @@ export default function Personal() {
     <div className="p-6">
 
       {/* HEADER */}
-
       <div className="flex justify-between items-center mb-6">
 
-        {message && (
-          <div className="mb-4 bg-purple-200 text-purple-800 p-2 rounded">
-            {message}
-          </div>
-        )}
-
-        <h1 className="text-2xl font-bold">
+        <h2 className="text-xl font-bold">
           REGISTRO DE PERSONAL
-        </h1>
+        </h2>
 
         <div className="flex gap-3">
 
           <button
-            onClick={() => setOpenModal(true)}
+            onClick={() => {
+              setMode("create")
+              resetForm()
+              setOpenModal(true)
+            }}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded"
           >
             <Plus size={18}/>
@@ -247,9 +334,7 @@ export default function Personal() {
 
       </div>
 
-
       {/* BUSCADOR */}
-
       <input
         type="text"
         placeholder="Buscar..."
@@ -258,14 +343,15 @@ export default function Personal() {
         onChange={(e)=>setSearch(e.target.value)}
       />
 
-
       {/* TABLA */}
-
-      <PersonalTable data={filtered} />
-
+      <PersonalTable
+        data={filtered}
+        onView={handleView}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
 
       {/* MODAL */}
-
       {openModal && (
 
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
@@ -285,36 +371,34 @@ export default function Personal() {
             )}
 
             <h2 className="text-xl font-bold mb-4">
-              REGISTRO DE PERSONAL
+              {mode === "create" && "REGISTRO"}
+              {mode === "view" && "DETALLE"}
+              {mode === "edit" && "EDITAR"}
             </h2>
 
             <div className="grid grid-cols-2 gap-4">
 
-              <input name="ci" placeholder="CI" className="border p-2" onChange={handleChange}/>
-              <input name="name" placeholder="Nombre" className="border p-2" onChange={handleChange}/>
-              <input name="celphone" placeholder="Celular" className="border p-2" onChange={handleChange}/>
-              <input name="stard_date" type="date" className="border p-2" onChange={handleChange}/>
+              <input name="ci" value={form.ci} onChange={handleChange} disabled={mode !== "create"} placeholder="CI" className="border p-2"/>
+              <input name="name" value={form.name} onChange={handleChange} disabled={mode==="view"} placeholder="Nombre" className="border p-2"/>
+              <input name="celphone" value={form.celphone} onChange={handleChange} disabled={mode==="view"} placeholder="Celular" className="border p-2"/>
+              <input name="stard_date" value={form.stard_date} onChange={handleChange} disabled={mode==="view"} type="date" className="border p-2"/>
 
-              <select name="id_branch" className="border p-2" onChange={handleChange}>
-                <option>Seleccionar sucursal</option>
+              <select name="id_branch" value={form.id_branch} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+                <option value="">Seleccionar sucursal</option>
                 {branches.map(b=>(
-                  <option key={b.id} value={b.id}>
-                    {b.name_branch}
-                  </option>
+                  <option key={b.id} value={b.id}>{b.name_branch}</option>
                 ))}
               </select>
 
-              <select name="id_role" className="border p-2" onChange={handleChange}>
-                <option>Seleccionar rol</option>
+              <select name="id_role" value={form.id_role} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+                <option value="">Seleccionar rol</option>
                 {roles.map(r=>(
-                  <option key={r.id} value={r.id}>
-                    {r.role}
-                  </option>
+                  <option key={r.id} value={r.id}>{r.role}</option>
                 ))}
               </select>
 
-              <input name="reference" placeholder="Referencia" className="border p-2" onChange={handleChange}/>
-              <input name="celphon_ref" placeholder="Celular referencia" className="border p-2" onChange={handleChange}/>
+              <input name="reference" value={form.reference} onChange={handleChange} disabled={mode==="view"} placeholder="Referencia" className="border p-2"/>
+              <input name="celphon_ref" value={form.celphon_ref} onChange={handleChange} disabled={mode==="view"} placeholder="Celular referencia" className="border p-2"/>
 
             </div>
 
@@ -327,12 +411,14 @@ export default function Personal() {
                 Cancelar
               </button>
 
-              <button
-                onClick={handleSubmit}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                Guardar
-              </button>
+              {mode !== "view" && (
+                <button
+                  onClick={handleSubmit}
+                  className="bg-blue-600 text-white px-4 py-2 rounded"
+                >
+                  Guardar
+                </button>
+              )}
 
             </div>
 
