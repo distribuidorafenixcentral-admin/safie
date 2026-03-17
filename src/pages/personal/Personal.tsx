@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import PersonalTable from "./PersonalTable"
+import * as XLSX from "xlsx"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
 
 import { Plus, FileText, FileSpreadsheet } from "lucide-react"
 
@@ -291,6 +294,84 @@ export default function Personal() {
 
   }
 
+  // EXPORTAR EXCEL
+  const exportToExcel = () => {
+
+    if (filtered.length === 0) {
+      setMessage("No hay datos para exportar")
+      setMessageType("error")
+      return
+    }
+
+    // formatear datos
+    const dataExport = filtered.map((p) => ({
+      ID: p.id,
+      CI: p.ci,
+      Nombre: p.name,
+      Celular: p.celphone,
+      Fecha_Ingreso: p.stard_date,
+      Sucursal: p.id_branch?.name_branch,
+      Rol: p.id_role?.role,
+      Referencia: p.reference,
+      Cel_Referencia: p.celphon_ref
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(dataExport)
+    const workbook = XLSX.utils.book_new()
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Personal")
+
+    XLSX.writeFile(workbook, "personal.xlsx")
+
+  }
+
+  // exportar PDF
+  const exportToPDF = () => {
+
+    if (filtered.length === 0) {
+      setMessage("No hay datos para exportar")
+      setMessageType("error")
+      return
+    }
+
+    const doc = new jsPDF()
+
+    // Título
+    doc.text("Reporte de Personal", 14, 10)
+
+    // Columnas
+    const tableColumn = [
+      "ID",
+      "CI",
+      "Nombre",
+      "Celular",
+      "Fecha",
+      "Sucursal",
+      "Rol"
+    ]
+
+    // Filas
+    const tableRows = filtered.map((p) => ([
+      p.id,
+      p.ci,
+      p.name,
+      p.celphone,
+      p.stard_date,
+      p.id_branch?.name_branch,
+      p.id_role?.role
+    ]))
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20
+    })
+
+    doc.save("personal.pdf")
+
+  }
+
+
   const filtered = personal.filter((p) =>
     p.name?.toLowerCase().includes(search.toLowerCase())
   )
@@ -320,12 +401,16 @@ export default function Personal() {
             Nuevo
           </button>
 
-          <button className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded">
+          <button 
+            onClick={exportToPDF}
+            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded">
             <FileText size={18}/>
             PDF
           </button>
 
-          <button className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded">
+          <button 
+            onClick={exportToExcel}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded">
             <FileSpreadsheet size={18}/>
             Excel
           </button>
@@ -371,9 +456,9 @@ export default function Personal() {
             )}
 
             <h2 className="text-xl font-bold mb-4">
-              {mode === "create" && "REGISTRO"}
-              {mode === "view" && "DETALLE"}
-              {mode === "edit" && "EDITAR"}
+              {mode === "create" && "REGISTRO DE PERSONAL NUEVO"}
+              {mode === "view" && "DETALLE DEL TRABAJADOR"}
+              {mode === "edit" && "EDITAR REGISTRO"}
             </h2>
 
             <div className="grid grid-cols-2 gap-4">
