@@ -12,6 +12,8 @@ export default function Personal() {
 
   const [branches, setBranches] = useState<any[]>([])
   const [roles, setRoles] = useState<any[]>([])
+  const [message, setMessage] = useState("")
+  const [messageType, setMessageType] = useState<"error" | "success" | "">("")
 
   const [form, setForm] = useState({
     ci: "",
@@ -29,6 +31,40 @@ export default function Personal() {
     fetchBranches()
     fetchRoles()
   }, [])
+
+    useEffect(() => {
+
+    if (message) {
+
+      const timer = setTimeout(() => {
+        setMessage("")
+      }, 2000) // 2 segundos
+
+      return () => clearTimeout(timer)
+
+    }
+
+  }, [message])
+
+  useEffect(() => {
+
+  const handleEsc = (e: KeyboardEvent) => {
+
+    if (e.key === "Escape") {
+      setOpenModal(false)
+    }
+
+  }
+  
+  
+
+  window.addEventListener("keydown", handleEsc)
+
+  return () => {
+    window.removeEventListener("keydown", handleEsc)
+  }
+
+}, [])
 
   const fetchPersonal = async () => {
 
@@ -86,11 +122,39 @@ export default function Personal() {
   }
 
   const handleSubmit = async () => {
+      
+      // Validación de campos
+      if (
+        !form.ci ||
+        !form.name ||
+        !form.celphone ||
+        !form.stard_date ||
+        !form.id_branch ||
+        !form.id_role ||
+        !form.reference ||
+        !form.celphon_ref
+      ) {
+        setMessage("Todos los campos son obligatorios")
+        setMessageType("error")
+        return
+      }
 
-    const { error } = await supabase
-      .from("team")
+      // Validación de llave primaria duplicada (ci=> carnet de identidad)
+      const { data: existing } = await supabase
+        .from("team")
+        .select("ci")
+        .eq("ci", form.ci)
+
+     if (existing && existing.length > 0) {
+        setMessage("El CI ya está registrado")
+        setMessageType("error")
+        return
+      }
+       
+      // Si se pasa la validación, se guarda recien
+      const { error } = await supabase
+      .from("team")       
       .insert({
-
         ci: form.ci,
         name: form.name,
         celphone: form.celphone,
@@ -99,31 +163,39 @@ export default function Personal() {
         id_role: form.id_role,
         reference: form.reference,
         celphon_ref: form.celphon_ref,
-
         status: 1,
         user_id: null
-
       })
 
-    if (error) {
+      if (error) {
+        setMessage("Error al guardar")
+        setMessageType("error")
+        return
+      }
 
-      console.error(error)
-      return
+    setMessage("Registro guardado correctamente")
+    setMessageType("success")
 
-    }
+    // se cerrara despues de 1.5 segundos
+    setTimeout(() => {
 
-    setOpenModal(false)
+      setOpenModal(false)
 
-    setForm({
-      ci: "",
-      name: "",
-      celphone: "",
-      stard_date: "",
-      id_branch: "",
-      id_role: "",
-      reference: "",
-      celphon_ref: ""
-    })
+      setForm({
+        ci: "",
+        name: "",
+        celphone: "",
+        stard_date: "",
+        id_branch: "",
+        id_role: "",
+        reference: "",
+        celphon_ref: ""
+      })
+
+      setMessage("")
+      setMessageType("")
+
+    }, 1500)
 
     fetchPersonal()
 
@@ -140,6 +212,12 @@ export default function Personal() {
       {/* HEADER */}
 
       <div className="flex justify-between items-center mb-6">
+
+        {message && (
+          <div className="mb-4 bg-purple-200 text-purple-800 p-2 rounded">
+            {message}
+          </div>
+        )}
 
         <h1 className="text-2xl font-bold">
           REGISTRO DE PERSONAL
@@ -194,6 +272,18 @@ export default function Personal() {
 
           <div className="bg-white p-6 rounded-lg w-150">
 
+            {message && (
+              <div
+                className={`mb-4 p-2 rounded text-white ${
+                  messageType === "error"
+                    ? "bg-red-500"
+                    : "bg-green-500"
+                }`}
+              >
+                {message}
+              </div>
+            )}
+
             <h2 className="text-xl font-bold mb-4">
               REGISTRO DE PERSONAL
             </h2>
@@ -232,7 +322,7 @@ export default function Personal() {
 
               <button
                 onClick={()=>setOpenModal(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded"
+                className="bg-red-400 text-white px-4 py-2 rounded"
               >
                 Cancelar
               </button>
