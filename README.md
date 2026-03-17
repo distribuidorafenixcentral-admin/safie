@@ -11,4 +11,6 @@
 # boton esc para cerrar el modal
 # ver, editar y eliminar (cambiar el estado de status)
 # exportacion pdf y excel
+# pagina Sucursal y SucursalTable
+
 
