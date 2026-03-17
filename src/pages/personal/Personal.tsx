@@ -62,6 +62,7 @@ export default function Personal() {
     }
   }, [])
 
+  // recuperamos los datos de la tabla Personal
   const fetchPersonal = async () => {
 
     const { data, error } = await supabase
@@ -81,47 +82,42 @@ export default function Personal() {
       .neq("id_branch", 1)
       .neq("status", 2)
 
+    //muestra el error en caso que sea BD
     if (error) console.error(error)
-
     setPersonal(data || [])
-
   }
 
+// Recuperamos los datos de la tabla Sucursales
   const fetchBranches = async () => {
-
     const { data, error } = await supabase
       .from("branches")
       .select("id,name_branch")
       .order("name_branch")
 
     if (error) console.error(error)
-
     setBranches(data || [])
-
   }
 
+  // Recuperamos los datros de la tabla roles
   const fetchRoles = async () => {
-
     const { data, error } = await supabase
       .from("role")
       .select("id,role")
       .order("role")
 
     if (error) console.error(error)
-
     setRoles(data || [])
-
   }
 
+  // Actualiza el formulario deforma dinamica
   const handleChange = (e:any) => {
-
     setForm({
       ...form,
       [e.target.name]: e.target.value
     })
-
   }
 
+  // Resetea el formulario 
   const resetForm = () => {
     setForm({
       ci: "",
@@ -135,9 +131,10 @@ export default function Personal() {
     })
   }
 
+  // ENVIA LOS DATOS PARA GUARDAR EL REGISTRO
   const handleSubmit = async () => {
 
-    // VALIDACIÓN
+    // VALIDACIÓN DE CAMPOS VACIOS
     if (
       !form.ci ||
       !form.name ||
@@ -234,6 +231,7 @@ export default function Personal() {
 
   }
 
+  // Ver El registro
   const handleView = (row:any) => {
 
     setSelected(row)
@@ -254,6 +252,7 @@ export default function Personal() {
 
   }
 
+  //Editar el registro
   const handleEdit = (row:any) => {
 
     setSelected(row)
@@ -274,6 +273,7 @@ export default function Personal() {
 
   }
 
+  // Eliminar el registro => cambia el status a 2
   const handleDelete = async (row:any) => {
 
     const confirmDelete = confirm("¿Eliminar este registro?")
@@ -377,9 +377,7 @@ export default function Personal() {
   )
 
   return (
-
-    <div className="p-6">
-
+    <div>
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
 

@@ -6,48 +6,36 @@ import {
   useReactTable
 } from "@tanstack/react-table"
 
-import { Pencil, Eye, Trash } from "lucide-react"
+import { Pencil, Trash } from "lucide-react"
 
-type Personal = {
+type Sucursal = {
   id: number
-  name: string
-  id_branch?: { id: number; name_branch: string }
-  id_role?: { id: number; role: string }
+  name_branch: string
+  adress_branch: string
 }
 
-const columnHelper = createColumnHelper<Personal>()
+const columnHelper = createColumnHelper<Sucursal>()
 
-export default function PersonalTable({
+export default function SucursalTable({
   data,
-  onView,
   onEdit,
   onDelete
 }: {
-  data: Personal[]
-  onView: (row: Personal) => void
-  onEdit: (row: Personal) => void
-  onDelete: (row: Personal) => void
+  data: Sucursal[]
+  onEdit: (row: Sucursal) => void
+  onDelete: (row: Sucursal) => void
 }) {
 
-  // ✅ AHORA columns está dentro del componente
+  //  Columnas dentro del componente
   const columns = [
-
     columnHelper.accessor("id", {
       header: "ID",
     }),
-
-    columnHelper.accessor("name", {
+    columnHelper.accessor("name_branch", {
       header: "Nombre",
     }),
-
-    columnHelper.accessor((row) => row.id_branch?.name_branch, {
-      id: "branch",
-      header: "Sucursal",
-    }),
-
-    columnHelper.accessor((row) => row.id_role?.role, {
-      id: "role",
-      header: "Rol",
+    columnHelper.accessor("adress_branch", {
+      header: "Dirección",
     }),
 
     columnHelper.display({
@@ -57,21 +45,15 @@ export default function PersonalTable({
       cell: ({ row }) => (
 
         <div className="flex gap-3">
-          {/* BOTON PARA VER */}
-          <button
-            onClick={() => onView(row.original)}
-            className="text-blue-600 hover:text-blue-800"
-          >
-            <Eye size={18}/>
-          </button>
-          {/* BOTON PARA EDITAR */}
+
+        {/* BOTON PARA EDITAR */}
           <button
             onClick={() => onEdit(row.original)}
             className="text-green-600 hover:text-green-800"
           >
             <Pencil size={18}/>
           </button>
-          {/* BOTON PARA ELIMINAR */}
+        {/* BOTON PARA ELIMINAR = PASA EL STATUS A 2 */}
           <button
             onClick={() => onDelete(row.original)}
             className="text-red-600 hover:text-red-800"
@@ -86,6 +68,7 @@ export default function PersonalTable({
 
   ]
 
+  {/* Paginacion de la tabla */}
   const table = useReactTable({
 
     data,
