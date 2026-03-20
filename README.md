@@ -12,6 +12,6 @@
 # ver, editar y eliminar (cambiar el estado de status)
 # exportacion pdf y excel
 # pagina Sucursal y SucursalTable
-# depliegue inicial
+# depliegue inicial vercel
 
 
