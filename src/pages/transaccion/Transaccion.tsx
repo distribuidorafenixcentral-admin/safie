@@ -1,211 +1,434 @@
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable
-} from "@tanstack/react-table"
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase"
+import TransaccionTable from "./TransaccionTable"
+import * as XLSX from "xlsx"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
 
-import { Pencil, Eye, Trash } from "lucide-react"
+import { Plus, FileText, FileSpreadsheet } from "lucide-react"
 
-type Transaction = {
-  id: number
-  created_at: string
+export default function Transaccion() {
 
-  // Relaciones (FK)
-  id_type_transaction?: { id: number; description: string }
-  id_branch?: { id: number; name_branch: string }
-  id_team?: { ci: string; name: string }
-  id_type_sale?: { id: number; atype?: string }
-  id_type_pay?: { id: number; type_p?: string }
-  id_customer?: { ci: string; name?: string }
-  id_car?: { id: number; plate?: string }
-  id_status?: { id: number; status: string }
-  // Campos simples
-  amount: number    
-  detail: string
-}
+  const [personal, setPersonal] = useState<any[]>([])
+  const [transaction, setTransaction] = useState<any[]>([])
+  const [typetransaction, setTypetransaction] = useState<any[]>([])
+  const [search, setSearch] = useState("")
+  const [openModal, setOpenModal] = useState(false)
+  const [branches, setBranches] = useState<any[]>([])
+  const [message, setMessage] = useState("")
+  const [messageType, setMessageType] = useState<"error" | "success" | "">("")
+  const [mode, setMode] = useState<"create" | "view" | "edit">("create")
+  const [selected, setSelected] = useState<any>(null)
 
-const columnHelper = createColumnHelper<Transaction>()
+  const [form, setForm] = useState({
+    id_type_transaction: "",
+    id_branch: "",
+    id_team: "",
+    amount: "",
+    detail: ""
+  })
 
-export default function TransaccionTable({
-  data,
-  onView,
-  onEdit,
-  onDelete
-}: {
-  data: Transaction[]
-  onView: (row: Transaction) => void
-  onEdit: (row: Transaction) => void
-  onDelete: (row: Transaction) => void
-}) {
+  useEffect(() => {
+    fetchTransaction()
+    fetchPersonal()
+    fetchBranches()
+    fetchTypetransaction()
+  }, [])
 
-  // columns deben estar dentro del componente
-  const columns = [
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(""), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [message])
 
-    columnHelper.accessor("id", {
-      header: "ID",
-    }),
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenModal(false)
+    }
+    window.addEventListener("keydown", handleEsc)
+    return () => window.removeEventListener("keydown", handleEsc)
+  }, [])
 
-    columnHelper.accessor((row) => row.id_type_transaction?.description, {
-      id: "tsolicitud",
-      header: "T. Solicitud",
-    }),
+  // ================= FETCH =================
 
-    columnHelper.accessor((row) => row.id_branch?.name_branch, {
-      id: "branch",
-      header: "Sucursal",
-    }),
+  const fetchTransaction = async () => {
+    const { data, error } = await supabase
+      .from("transactions")
+      .select(`
+        id,
+        id_type_transaction (id, description),
+        id_branch (id, name_branch),
+        id_team (ci, name),
+        amount,
+        detail,
+        id_status (id, status)
+      `)
+      .order("id", { ascending: false })
+      .eq("id_status", 1)
 
-    columnHelper.accessor((row) => row.id_team?.name, {
-      id: "team",
-      header: "Solicitante",
-    }),
+    if (error) console.error(error)
+    setTransaction(data || [])
+  }
 
-    columnHelper.accessor("amount", {
-      header: "Monto",
-    }),
+  const fetchTypetransaction = async () => {
+    const { data, error } = await supabase
+      .from("type_transaction")
+      .select("id, description")
+      .in("id", [1, 2, 7]) 
+      .order("id")
 
-    columnHelper.accessor("detail", {
-      header: "Detalle",
-    }),
+    if (error) console.error(error)
+    setTypetransaction(data || [])
+  }
 
-    columnHelper.display({
-      id: "acciones",
-      header: "Acciones",
+  const fetchPersonal = async () => {
+    const { data, error } = await supabase
+      .from("team")
+      .select("ci, name")
+      .order("name")
 
-      cell: ({ row }) => (
+    if (error) console.error(error)
+    setPersonal(data || [])
+  }
+
+  const fetchBranches = async () => {
+    const { data, error } = await supabase
+      .from("branches")
+      .select("id, name_branch")
+      .order("name_branch")
+
+    if (error) console.error(error)
+    setBranches(data || [])
+  }
+
+  // ================= FORM =================
+
+  const handleChange = (e: any) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  const resetForm = () => {
+    setForm({
+      id_type_transaction: "",
+      id_branch: "",
+      id_team: "",
+      amount: "",
+      detail: ""
+    })
+  }
+
+  // ================= SUBMIT =================
+
+  const handleSubmit = async () => {
+
+    if (
+      !form.id_type_transaction ||
+      !form.id_branch ||
+      !form.id_team ||
+      !form.amount ||
+      !form.detail
+    ) {
+      setMessage("Todos los campos son obligatorios")
+      setMessageType("error")
+      return
+    }
+
+    const payload = {
+      id_type_transaction: Number(form.id_type_transaction),
+      id_branch: Number(form.id_branch),
+      id_team: form.id_team,
+      amount: Number(form.amount),
+      detail: form.detail,
+      id_status: 1
+    }
+
+    if (mode === "create") {
+      const { error } = await supabase
+        .from("transactions")
+        .insert(payload)
+
+      if (error) {
+        console.error("INSERT ERROR:", error)
+        setMessage(error.message)
+        setMessageType("error")
+        return
+      }
+
+      setMessage("Registro guardado correctamente")
+    }
+
+    if (mode === "edit" && selected) {
+      const { error } = await supabase
+        .from("transactions")
+        .update(payload)
+        .eq("id", selected.id)
+
+      if (error) {
+        console.error("UPDATE ERROR:", error)
+        setMessage(error.message)
+        setMessageType("error")
+        return
+      }
+
+      setMessage("Registro actualizado correctamente")
+    }
+
+    setMessageType("success")
+
+    setTimeout(() => {
+      setOpenModal(false)
+      resetForm()
+      setSelected(null)
+      setMode("create")
+      setMessage("")
+      setMessageType("")
+    }, 1500)
+
+    fetchTransaction()
+  }
+
+  // ================= ACCIONES =================
+
+  const handleView = (row: any) => {
+    setSelected(row)
+    setMode("view")
+
+    setForm({
+      id_type_transaction: row.id_type_transaction?.id || "",
+      id_branch: row.id_branch?.id || "",
+      id_team: row.id_team?.ci || "",
+      amount: row.amount || "",
+      detail: row.detail || ""
+    })
+
+    setOpenModal(true)
+  }
+
+  const handleEdit = (row: any) => {
+    setSelected(row)
+    setMode("edit")
+
+    setForm({
+      id_type_transaction: row.id_type_transaction?.id || "",
+      id_branch: row.id_branch?.id || "",
+      id_team: row.id_team?.ci || "",
+      amount: row.amount || "",
+      detail: row.detail || ""
+    })
+
+    setOpenModal(true)
+  }
+
+  const handleDelete = async (row: any) => {
+    const confirmDelete = confirm("¿Eliminar este registro?")
+    if (!confirmDelete) return
+
+    const { error } = await supabase
+      .from("transactions")
+      .update({ id_status: 2 })
+      .eq("id", row.id)
+
+    if (error) {
+      setMessage("Error al eliminar")
+      return
+    }
+
+    setMessage("Registro eliminado")
+    fetchTransaction()
+  }
+
+  // ================= EXPORT =================
+
+  const filtered = transaction.filter((p) =>
+    `${p.id_team?.name || ""} ${p.id_branch?.name_branch || ""} ${p.detail || ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  )
+
+  const exportToExcel = () => {
+    if (filtered.length === 0) {
+      setMessage("No hay datos para exportar")
+      setMessageType("error")
+      return
+    }
+
+    const dataExport = filtered.map((p) => ({
+      ID: p.id,
+      T_Solicitud: p.id_type_transaction?.description,
+      Sucursal: p.id_branch?.name_branch,
+      Solicitante: p.id_team?.name || "",
+      Monto: p.amount,
+      Detalle: p.detail
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(dataExport)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Solicitudes")
+    XLSX.writeFile(workbook, "Solicitudes_Transacciones_Cargadas.xlsx")
+  }
+
+  const exportToPDF = () => {
+    if (filtered.length === 0) {
+      setMessage("No hay datos para exportar")
+      setMessageType("error")
+      return
+    }
+
+    const doc = new jsPDF()
+
+    doc.text("Solicitudes de Pagos Cargadas", 14, 10)
+
+    const tableRows = filtered.map((p) => ([
+      p.id,
+      p.id_type_transaction?.description,
+      p.id_branch?.name_branch,
+      p.id_team?.name || "",
+      p.amount,
+      p.detail
+    ]))
+
+    autoTable(doc, {
+      head: [["ID","T. SOLICITUD","SUCURSAL","SOLICITANTE","MONTO","DETALLE"]],
+      body: tableRows,
+      startY: 20
+    })
+
+    doc.save("LoadSolTrans.pdf")
+  }
+
+  return (
+    <div>
+
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold">
+          SOLICTUDE DE PAGO
+        </h2>
 
         <div className="flex gap-3">
-          {/* BOTON PARA VER */}
+
           <button
-            onClick={() => onView(row.original)}
-            className="text-blue-600 hover:text-blue-800"
+            onClick={() => {
+              setMode("create")
+              resetForm()
+              setOpenModal(true)
+            }}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded"
           >
-            <Eye size={18}/>
+            <Plus size={18}/>
+            Nuevo
           </button>
-          {/* BOTON PARA EDITAR */}
-          <button
-            onClick={() => onEdit(row.original)}
-            className="text-green-600 hover:text-green-800"
-          >
-            <Pencil size={18}/>
+
+          <button 
+            onClick={exportToPDF}
+            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded">
+            <FileText size={18}/>
+            PDF
           </button>
-          {/* BOTON PARA ELIMINAR */}
-          <button
-            onClick={() => onDelete(row.original)}
-            className="text-red-600 hover:text-red-800"
-          >
-            <Trash size={18}/>
+
+          <button 
+            onClick={exportToExcel}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded">
+            <FileSpreadsheet size={18}/>
+            Excel
           </button>
 
         </div>
-
-      )
-    })
-
-  ]
-
-  const table = useReactTable({
-
-    data,
-    columns,
-
-    initialState: {
-      pagination: {
-        pageSize: 5
-      }
-    },
-
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel()
-
-  })
-
-  return (
-
-    <div className="mt-6">
-
-      <table className="w-full border border-gray-200">
-
-        <thead className="bg-gray-100">
-
-          {table.getHeaderGroups().map((headerGroup) => (
-
-            <tr key={headerGroup.id}>
-
-              {headerGroup.headers.map((header) => (
-
-                <th key={header.id} className="p-3 text-left font-semibold">
-
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-
-                </th>
-
-              ))}
-
-            </tr>
-
-          ))}
-
-        </thead>
-
-        <tbody>
-
-          {table.getRowModel().rows.map((row) => (
-
-            <tr key={row.id} className="border-t hover:bg-gray-50">
-
-              {row.getVisibleCells().map((cell) => (
-
-                <td key={cell.id} className="p-3">
-
-                  {flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext()
-                  )}
-
-                </td>
-
-              ))}
-
-            </tr>
-
-          ))}
-
-        </tbody>
-
-      </table>
-
-      {/* PAGINACION */}
-
-      <div className="flex items-center gap-3 mt-4">
-
-        <button
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-          className="px-3 py-1 border rounded"
-        >
-          Anterior
-        </button>
-
-        <span>
-          Página {table.getState().pagination.pageIndex + 1} de{" "}
-          {table.getPageCount()}
-        </span>
-
-        <button
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-          className="px-3 py-1 border rounded"
-        >
-          Siguiente
-        </button>
-
       </div>
+
+      {/* BUSCADOR */}
+      <input
+        type="text"
+        placeholder="Buscar..."
+        className="border px-3 py-2 rounded mb-6 w-full max-w-md"
+        value={search}
+        onChange={(e)=>setSearch(e.target.value)}
+      />
+
+      {/* TABLA */}
+      <TransaccionTable
+        data={filtered}
+        onView={handleView}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+
+      {/* MODAL */}
+      {openModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+
+          <div className="bg-white p-6 rounded-lg w-150">
+
+            {message && (
+              <div className={`mb-4 p-2 rounded text-white ${
+                messageType === "error" ? "bg-red-500" : "bg-green-500"
+              }`}>
+                {message}
+              </div>
+            )}
+
+            <h2 className="text-xl font-bold mb-4">
+              {mode === "create" && "REGISTRAR NUEVA SOLICITUD"}
+              {mode === "view" && "DETALLE DE LA SOLICITUD"}
+              {mode === "edit" && "EDITAR SOLICITUD"}
+            </h2>
+
+            <div className="grid grid-cols-2 gap-4">
+
+              <select name="id_type_transaction" value={form.id_type_transaction} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+                <option value="">Seleccionar el tipo de solicitud</option>
+                {typetransaction.map(r=>(
+                  <option key={r.id} value={r.id}>{r.description}</option>
+                ))}
+              </select>
+              
+              <select name="id_branch" value={form.id_branch} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+                <option value="">Seleccionar sucursal</option>
+                {branches.map(b=>(
+                  <option key={b.id} value={b.id}>{b.name_branch}</option>
+                ))}
+              </select>
+
+              <select name="id_team" value={form.id_team} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+                <option value="">Seleccionar Solicitante</option>
+                {personal.map(b=>(
+                  <option key={b.ci} value={b.ci}>{b.name}</option>
+                ))}
+              </select>
+
+              <input name="amount" value={form.amount} onChange={handleChange} disabled={mode==="view"} placeholder="Monto" className="border p-2"/>
+              <input name="detail" value={form.detail} onChange={handleChange} disabled={mode==="view"} placeholder="Detalle" className="border p-2"/>
+
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+
+              <button
+                onClick={()=>setOpenModal(false)}
+                className="bg-red-400 text-white px-4 py-2 rounded"
+              >
+                Cancelar
+              </button>
+
+              {mode !== "view" && (
+                <button
+                  onClick={handleSubmit}
+                  className="bg-blue-600 text-white px-4 py-2 rounded"
+                >
+                  Guardar
+                </button>
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
 
     </div>
   )

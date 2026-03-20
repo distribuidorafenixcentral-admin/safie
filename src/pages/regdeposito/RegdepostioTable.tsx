@@ -28,7 +28,7 @@ type Transaction = {
 
 const columnHelper = createColumnHelper<Transaction>()
 
-export default function TransaccionTable({
+export default function RegdeposritoTable({
   data,
   onView,
   onEdit,
