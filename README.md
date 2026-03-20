@@ -13,7 +13,7 @@
 # exportacion pdf y excel
 # pagina Sucursal y SucursalTable
 # pagina Cargar transaccion y cargar transaccion table
-# Cargar la solicitud de deposito en la misma opcion de cargar transacciones
+# Cargar la solicitud de deposito 
 
 
 
