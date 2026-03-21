@@ -16,5 +16,6 @@
 # Cargar la solicitud de deposito 
 # carga de solicitud de deposito completo, edcion, ver, y eliminar
 # siguiente feature, en este modulo view y validaciones
+# Carga de vehiculos y clientes
 
 
