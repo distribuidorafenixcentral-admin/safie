@@ -188,19 +188,13 @@ export default function Regdeposito() {
     }
 
     const payload = {
-      id_type_transaction: Number(form.id_type_transaction),
       id_branch: Number(form.id_branch),
       id_team: form.id_team,
       amount: Number(form.amount),
       detail: form.detail,
-
-      id_type_transaction: 8,
-      id_branch: Number(form.id_branch),
-      id_team: form.id_team,
+      id_type_transaction: 8,    
       id_type_sale: Number (form.id_type_sale),
-      id_type_pay: Number (form.id_type_pay),
-      amount: Number(form.amount),
-      detail: form.detail,
+      id_type_pay: Number (form.id_type_pay),    
       id_customer: Number (form.id_customer),
       id_car: Number (form.id_car),
       c_inicial: Number (form.c_inicial),
