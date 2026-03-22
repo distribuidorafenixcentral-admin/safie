@@ -6,7 +6,7 @@ import {
   useReactTable
 } from "@tanstack/react-table"
 
-import { Eye, Trash, DollarSign } from "lucide-react"
+import { Trash, DollarSign } from "lucide-react"
 
 type Deposito = {
   id: number
@@ -30,13 +30,11 @@ type Deposito = {
 const columnHelper = createColumnHelper<Deposito>()
 
 export default function DepositoTable({
-  data,
-  onView,
+  data,  
   onEdit,
   onDelete
 }: {
-  data: Deposito[]
-  onView: (row: Deposito) => void
+  data: Deposito[]  
   onEdit: (row: Deposito) => void
   onDelete: (row: Deposito) => void
 }) {
@@ -97,27 +95,22 @@ export default function DepositoTable({
 
       cell: ({ row }) => (
 
-        <div className="flex gap-3">
+        <div className="flex gap-5">
           {/* BOTON PARA VER */}
           <button
-            onClick={() => onView(row.original)}
-            className="text-blue-600 hover:text-blue-800"
-          >
-            <Eye size={18}/>
-          </button>
-          {/* BOTON PARA APROBAR EL DEPOSITO */}
-          <button
             onClick={() => onEdit(row.original)}
-            className="text-green-600 hover:text-green-800"
+            className="text-green-600 hover:text-purple-800"
+            title="Verificar datos del deposito"
           >
-            <DollarSign size={18}/>
-          </button>
+            <DollarSign size={20}/>
+          </button>       
           {/* BOTON PARA DAR DE BAJA EL DEPOSITO */}
           <button
             onClick={() => onDelete(row.original)}
-            className="text-red-600 hover:text-red-800"
+            className="text-red-600 hover:text-purple-800"
+            title="Baja"
           >
-            <Trash size={18}/>
+            <Trash size={20}/>
           </button>
 
         </div>

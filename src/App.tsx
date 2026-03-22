@@ -11,6 +11,9 @@ import Vehiculo from "./pages/vehiculo/Vehiculo"
 import Cliente from "./pages/cliente/Cliente"
 import Deposito from "./pages/deposito/Deposito"
 import Regdeuda from "./pages/regdeuda/RegDeuda"
+import Deuda from "./pages/deuda/Deuda"
+import Memos from "./pages/memos/Memos"
+
 
 
 function App() {
@@ -90,10 +93,22 @@ function App() {
           element={<Cliente />}
         />
 
-             {/* Página Personal dentro del Dashboard */}
+        {/* INGRESOS
+         */}
+        {/* Página Depositos dentro del Dashboard */}
         <Route
           path="deposito"
           element={<Deposito />}
+        />
+         {/* Página Deudas dentro del Dashboard */}
+        <Route
+          path="deuda"
+          element={<Deuda />}
+        />
+         {/* Página Memos dentro del Dashboard */}
+        <Route
+          path="memos"
+          element={<Memos/>}
         />
 
       </Route>

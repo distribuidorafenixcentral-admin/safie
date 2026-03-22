@@ -41,8 +41,8 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
       icon: ArrowLeftRight,
       children: [
         { name: "Deposito", path: "/dashboard/deposito" },
-        { name: "Cobro Deuda", path: "/dashboard/deudas"},
-        { name: "Memos / sanciones", path: "/dashboard/sanciones"}
+        { name: "Cobro Deuda", path: "/dashboard/deuda"},
+        { name: "Memos / sanciones", path: "/dashboard/memos"}
       ]
     },
       {

@@ -9,22 +9,24 @@ import { FileText, FileSpreadsheet, } from "lucide-react"
 
 export default function Deposito() {
 
+  // tabla principal
+  const [transaction, setTransaction] = useState<any[]>([])
+  // tablas referenciales
+  const [branches, setBranches] = useState<any[]>([])
   const [personal, setPersonal] = useState<any[]>([])
-
   const [tventa, setTventa] = useState<any[]>([])
   const [tpago, setTpago] = useState<any[]>([])
   const [cliente, setCliente] = useState<any[]>([])
   const [vehiculo, setVehiculo] = useState<any[]>([])
-
-  const [transaction, setTransaction] = useState<any[]>([])
+  // funcionales  
   const [search, setSearch] = useState("")
   const [openModal, setOpenModal] = useState(false)
-  const [branches, setBranches] = useState<any[]>([])
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
   const [mode, setMode] = useState<"view" | "edit">("view")
   const [selected, setSelected] = useState<any>(null)
 
+  //formualario
   const [form, setForm] = useState({
     id_branch: "",
     id_team: "",
@@ -62,8 +64,9 @@ export default function Deposito() {
     return () => window.removeEventListener("keydown", handleEsc)
   }, [])
 
-  // ================= FETCH =================
+  // FETCH
 
+  // Fetch Principal
   const fetchTransaction = async () => {
     const { data, error } = await supabase
       .from("transactions")
@@ -90,6 +93,7 @@ export default function Deposito() {
     setTransaction(data || [])
   }
 
+  // Fetch tipo de venta
   const fetchTventa = async () => {
     const { data, error } = await supabase
       .from("type_sale")
@@ -100,6 +104,7 @@ export default function Deposito() {
     setTventa(data || [])
   }
 
+  // Fetch tipo de pago
   const fetchTpago = async () => {
     const { data, error } = await supabase
       .from("type_pay")
@@ -110,6 +115,7 @@ export default function Deposito() {
     setTpago(data || [])
   }
 
+  // Fetch tabla clientes
   const fetchCliente = async () => {
     const { data, error } = await supabase
       .from("customers")
@@ -121,6 +127,7 @@ export default function Deposito() {
     setCliente(data || [])
   }
 
+  // Fetch tabla vehiculos
   const fetchVehiculo = async () => {
     const { data, error } = await supabase
       .from("cars")
@@ -131,6 +138,7 @@ export default function Deposito() {
     setVehiculo(data || [])
   }
  
+  // Fetch tabla team => personal
   const fetchPersonal = async () => {
     const { data, error } = await supabase
       .from("team")
@@ -141,6 +149,7 @@ export default function Deposito() {
     setPersonal(data || [])
   }
 
+  // Fetch tabla sucursales
   const fetchBranches = async () => {
     const { data, error } = await supabase
       .from("branches")
@@ -151,8 +160,7 @@ export default function Deposito() {
     setBranches(data || [])
   }
 
-  // ================= FORM =================
-
+  // Formulario
   const handleChange = (e: any) => {
     setForm({
       ...form,
@@ -160,29 +168,21 @@ export default function Deposito() {
     })
   }
 
-  const resetForm = () => {
-    setForm({
-      id_branch: "",
-      id_team: "",
-      id_type_sale: "",
-      id_type_pay: "",
-      amount:"",
-      detail:"",
-      id_customer: "",
-      id_car: "",
-      c_inicial:""
-    })
-  }
-
-  // ================= SUBMIT =================
-
+  // Submit
   const handleSubmit = async () => {
 
+    // Control de campos vacios
     if (
+      !form.id_branch ||
+      !form.id_team ||
+      !form.id_type_sale ||
       !form.id_type_pay ||
+      !form.id_customer ||
+      !form.id_car ||
+      !form.amount ||
       !form.c_inicial 
     ) {
-      setMessage("Todos los campos son obligatorios")
+      setMessage("Todos los campos son obligatorios (expeto detalles)")
       setMessageType("error")
       return
     }
@@ -198,7 +198,6 @@ export default function Deposito() {
       id_customer: Number (form.id_customer),
       id_car: Number (form.id_car),
       c_inicial: Number (form.c_inicial),
-
       id_status: 1
     }
 
@@ -220,11 +219,8 @@ export default function Deposito() {
 
     setMessageType("success")
 
-    setTimeout(() => {
-      setOpenModal(false)
-      resetForm()
-      setSelected(null)
-      setMode("view")
+      setTimeout(() => {
+      setMode("edit")         
       setMessage("")
       setMessageType("")
     }, 1500)
@@ -234,45 +230,27 @@ export default function Deposito() {
 
   // ================= ACCIONES =================
 
-  // Ver el registro
-  const handleView = (row: any) => {
-    setSelected(row)
-    setMode("view")
 
-    setForm({
-      id_branch: row.id_branch?.id || "",
-      id_team: row.id_team?.ci || "",
-      id_type_sale: row.id_type_sale?.id || "",
-      id_type_pay: row.id_type_pay?.id || "",
-      amount: row.amount || "",
-      detail: row.detail || "",
-      id_customer: row.id_customer?.ci || "",
-      id_car: row.id_car?.id ||"",
-      c_inicial: row.c_inicial || ""
 
-    })
+  // Se corrigen posibles cambios en el proceso del depósito
+  const handleEdit = (row: any) => {
+      setSelected(row)
+      setMode("edit")
 
-    setOpenModal(true)
-  }
+      setForm({
+        id_branch: row.id_branch?.id || "",
+        id_team: row.id_team?.ci || "",
+        id_type_sale: row.id_type_sale?.id || "",
+        id_type_pay: row.id_type_pay.id || "",
+        amount: row.amount || "",
+        detail: row.detail || "",
+        id_customer: row.id_customer?.ci || "",
+        id_car: row.id_car?.id || "",
+        c_inicial: row.c_inicial || ""
+      })
 
-  // Se aprueba el depósito cambiando el status a 2 => Pagado
-  const handleEdit = async (row: any) => {
-    const confirmAprove = confirm("¿El depósito será cargado?")
-    if (!confirmAprove) return
-
-    const { error } = await supabase
-      .from("transactions")
-      .update({ id_status: 2 })
-      .eq("id", row.id)
-
-    if (error) {
-      setMessage("Error al cargar el depósito")
-      return
+      setOpenModal(true)
     }
-
-    setMessage("Depósito confirmado")
-    fetchTransaction()
-  }
 
   // Se da de baja el depósito cambiando el status a 3 => Rechazado
   const handleDelete = async (row: any) => {
@@ -293,11 +271,38 @@ export default function Deposito() {
     fetchTransaction()
   }
 
+  // Se confirma el depósito cambiando el status a 2 => Pagado
+  const handleConfirmar = async () => {
+  if (!selected) return
+
+  const confirmPay = confirm("¿Confirmar el depósito?")
+  if (!confirmPay) return
+
+  const { error } = await supabase
+    .from("transactions")
+    .update({ id_status: 2 })
+    .eq("id", selected.id)
+
+  if (error) {
+    setMessage("Error DB")
+    return
+  }
+
+    setMessage("Depósito confirmado")
+     setTimeout(() => {
+      setOpenModal(false)        
+      setMessage("")
+      setMessageType("")
+    }, 1500)
+   
+  fetchTransaction()
+}
+
   // ================= EXPORT =================
 
-  // Filtro
+  // Filtro asesor, sucursal, detalle, tipo de venta, tipo de pago, cliente
   const filtered = transaction.filter((p) =>
-    `${p.id_team?.name || ""} ${p.id_branch?.name_branch || ""} ${p.detail || ""}`
+    `${p.id_team?.name || ""} ${p.id_branch?.name_branch || ""} ${p.id_customer?.name || ""} ${p.detail || ""} ${p.id_type_sale?.atype || ""} ${p.id_type_pay?.type_p || ""}`
       .toLowerCase()
       .includes(search.toLowerCase())
   )
@@ -360,7 +365,7 @@ export default function Deposito() {
     <div>
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg text-red-800 font-bold">
+        <h2 className="text-2xl text-red-800 font-bold italic">
          DEPÓSITOS
         </h2>
 
@@ -394,8 +399,7 @@ export default function Deposito() {
 
       {/* TABLA */}
       <DepositoTable
-        data={filtered}
-        onView={handleView}
+        data={filtered}        
         onEdit={handleEdit}
         onDelete={handleDelete}
       />
@@ -414,10 +418,8 @@ export default function Deposito() {
               </div>
             )}
 
-            <h2 className="text-xl font-bold mb-4">
-             
-              {mode === "view" && "DETALLE DE LA SOLICITUD"}
-              {mode === "edit" && "EDITAR SOLICITUD"}
+            <h2 className="text-2xl font-bold mb-4 text-green-800 italic">           
+              {mode === "edit" && "CONFIRMACION DE DEPÓSITO"}
             </h2>
 
             <div className="grid grid-cols-2 gap-4">
@@ -479,15 +481,20 @@ export default function Deposito() {
               >
                 Cancelar
               </button>
-
-              {mode !== "view" && (
+              
                 <button
                   onClick={handleSubmit}
                   className="bg-blue-600 text-white px-4 py-2 rounded"
                 >
-                  Guardar
-                </button>
-              )}
+                  Guardar Cambios
+                </button>  
+                 <button
+                  onClick={handleConfirmar}
+                  className="bg-green-800 text-white px-4 py-2 rounded"
+                >
+                  Confirmar Depósito
+                </button>             
+           
 
             </div>
 
