@@ -16,7 +16,7 @@
 # Cargar la solicitud de deposito 
 # carga de solicitud de deposito completo, edcion, ver, y eliminar
 # siguiente feature, en este modulo view y validaciones
-# Proximo paso crear el feature de registro de vehiculos
+# Proximo paso crear el feature/regvehiculos
 
 
 
