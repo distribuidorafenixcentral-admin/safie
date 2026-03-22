@@ -36,12 +36,18 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
       ]
     },
     {
-      name: "Transacciones",
+      name: "T. Ingresos",
       icon: ArrowLeftRight,
       children: [
-        { name: "Deposito", path: "/deposito" },
-        { name: "Pago Deudas", path: "/deudas"},
-        { name: "Memos / sanciones", path: "/sancines"},      
+        { name: "Deposito", path: "/dashboard/deposito" },
+        { name: "Cobro Deuda", path: "/dashboard/deudas"},
+        { name: "Memos / sanciones", path: "/dashboard/sanciones"}
+      ]
+    },
+      {
+      name: "T. Egresos",
+      icon: ArrowLeftRight,
+      children: [  
         { name: "Pago Comisiones", path: "/comisiones" },
         { name: "Pago Sueldos", path: "/sueldos" },
         { name: "Pago Servicios", path: "/servicios" },

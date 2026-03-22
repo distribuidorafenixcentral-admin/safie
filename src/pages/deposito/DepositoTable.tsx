@@ -6,9 +6,9 @@ import {
   useReactTable
 } from "@tanstack/react-table"
 
-import { Pencil, Eye, Trash } from "lucide-react"
+import { Eye, Trash, DollarSign } from "lucide-react"
 
-type Transaction = {
+type Deposito = {
   id: number
   created_at: string
 
@@ -19,25 +19,26 @@ type Transaction = {
   id_type_sale?: { id: number; atype?: string }
   id_type_pay?: { id: number; type_p?: string }
   id_customer?: { ci: string; name?: string }
-  id_car?: { id: number; plate?: string }
+  id_car?: { id: number; name?: string, cost?: number }
   id_status?: { id: number; status: string }
   // Campos simples
   amount: number    
+  c_inicial: number
   detail: string
 }
 
-const columnHelper = createColumnHelper<Transaction>()
+const columnHelper = createColumnHelper<Deposito>()
 
-export default function RegdeposritoTable({
+export default function DepositoTable({
   data,
   onView,
   onEdit,
   onDelete
 }: {
-  data: Transaction[]
-  onView: (row: Transaction) => void
-  onEdit: (row: Transaction) => void
-  onDelete: (row: Transaction) => void
+  data: Deposito[]
+  onView: (row: Deposito) => void
+  onEdit: (row: Deposito) => void
+  onDelete: (row: Deposito) => void
 }) {
 
   // columns deben estar dentro del componente
@@ -47,27 +48,47 @@ export default function RegdeposritoTable({
       header: "ID",
     }),
 
-    columnHelper.accessor((row) => row.id_type_transaction?.description, {
-      id: "tsolicitud",
-      header: "T. Solicitud",
-    }),
-
-    columnHelper.accessor((row) => row.id_branch?.name_branch, {
+     columnHelper.accessor((row) => row.id_branch?.name_branch, {
       id: "branch",
       header: "Sucursal",
     }),
 
     columnHelper.accessor((row) => row.id_team?.name, {
-      id: "team",
-      header: "Solicitante",
+      id: "asesor",
+      header: "Asesor",
     }),
 
-    columnHelper.accessor("amount", {
-      header: "Monto",
+    columnHelper.accessor((row) => row.id_type_sale?.atype, {
+      id: "tventa",
+      header: "Venta",
+    }),
+
+    columnHelper.accessor((row) => row.id_type_pay?.type_p, {
+      id: "tpago",
+      header: "Pago",
+    }),
+
+    columnHelper.accessor((row) => row.id_customer?.name, {
+      id: "cliente",
+      header: "Cliente",
+    }),
+
+    columnHelper.accessor((row) => row.id_car?.name, {
+      id: "Vehiculo",
+      header: "Vehiculo",
+    }),
+
+    columnHelper.accessor((row) => row.id_car?.cost, {
+      id: "amount",
+      header: "Costo"
+    }),
+
+    columnHelper.accessor("c_inicial", {
+      header: "Inicial",
     }),
 
     columnHelper.accessor("detail", {
-      header: "DEtalle",
+      header: "Detalle",
     }),
 
     columnHelper.display({
@@ -84,14 +105,14 @@ export default function RegdeposritoTable({
           >
             <Eye size={18}/>
           </button>
-          {/* BOTON PARA EDITAR */}
+          {/* BOTON PARA APROBAR EL DEPOSITO */}
           <button
             onClick={() => onEdit(row.original)}
             className="text-green-600 hover:text-green-800"
           >
-            <Pencil size={18}/>
+            <DollarSign size={18}/>
           </button>
-          {/* BOTON PARA ELIMINAR */}
+          {/* BOTON PARA DAR DE BAJA EL DEPOSITO */}
           <button
             onClick={() => onDelete(row.original)}
             className="text-red-600 hover:text-red-800"

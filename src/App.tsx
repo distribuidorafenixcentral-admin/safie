@@ -9,6 +9,7 @@ import Transaccion from "./pages/transaccion/Transaccion"
 import Regdeposito from "./pages/regdeposito/Regdeposito"
 import Vehiculo from "./pages/vehiculo/Vehiculo"
 import Cliente from "./pages/cliente/Cliente"
+import Deposito from "./pages/deposito/deposito"
 
 function App() {
 
@@ -78,6 +79,12 @@ function App() {
         <Route
           path="cliente"
           element={<Cliente />}
+        />
+
+             {/* Página Personal dentro del Dashboard */}
+        <Route
+          path="deposito"
+          element={<Deposito />}
         />
 
       </Route>

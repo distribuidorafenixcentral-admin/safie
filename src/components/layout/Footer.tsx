@@ -6,7 +6,7 @@ export default function Footer() {
 
       © 2026 A.R.SYSTEMS BOLIVIA & DISTRIBUIDORA FENIX      Version 1.0
 
-    </footer>
+    </footer> 
 
   )
 }

@@ -17,11 +17,11 @@ type Personal = {
 
 const columnHelper = createColumnHelper<Personal>()
 
-export default function PersonalTable({
+export default function PersonalTable({ 
   data,
   onView,
   onEdit,
-  onDelete
+  onDelete 
 }: {
   data: Personal[]
   onView: (row: Personal) => void
