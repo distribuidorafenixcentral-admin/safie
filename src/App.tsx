@@ -9,7 +9,9 @@ import Transaccion from "./pages/transaccion/Transaccion"
 import Regdeposito from "./pages/regdeposito/Regdeposito"
 import Vehiculo from "./pages/vehiculo/Vehiculo"
 import Cliente from "./pages/cliente/Cliente"
-import Deposito from "./pages/deposito/deposito"
+import Deposito from "./pages/deposito/Deposito"
+import Regdeuda from "./pages/regdeuda/RegDeuda"
+
 
 function App() {
 
@@ -69,8 +71,15 @@ function App() {
           path="regdeposito"
           element={<Regdeposito />}
         />
+
+         {/* Página Registro de Deuda dentro del Dashboard */}
+        <Route
+          path="regdeuda"
+          element={<Regdeuda />}
+        />
          {/* Página Registro de Vehículo dentro del Dashboard */}
         <Route
+        
           path="vehiculo"
           element={<Vehiculo />}
         />
