@@ -1,17 +1,22 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
-import RegdeposritoTable from "./RegdepostioTable"
+import RegdepositoTable from "./RegdepositoTable"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 
-import { Plus, FileText, FileSpreadsheet } from "lucide-react"
+import { Plus, FileText, FileSpreadsheet, } from "lucide-react"
 
 export default function Regdeposito() {
 
   const [personal, setPersonal] = useState<any[]>([])
+
+  const [tventa, setTventa] = useState<any[]>([])
+  const [tpago, setTpago] = useState<any[]>([])
+  const [cliente, setCliente] = useState<any[]>([])
+  const [vehiculo, setVehiculo] = useState<any[]>([])
+
   const [transaction, setTransaction] = useState<any[]>([])
-  const [typetransaction, setTypetransaction] = useState<any[]>([])
   const [search, setSearch] = useState("")
   const [openModal, setOpenModal] = useState(false)
   const [branches, setBranches] = useState<any[]>([])
@@ -21,18 +26,25 @@ export default function Regdeposito() {
   const [selected, setSelected] = useState<any>(null)
 
   const [form, setForm] = useState({
-    id_type_transaction: "",
     id_branch: "",
     id_team: "",
+    id_type_sale:"",
+    id_type_pay:"",
     amount: "",
-    detail: ""
+    detail: "",
+    id_car:"",
+    id_customer:"",
+    c_inicial:""
   })
 
   useEffect(() => {
     fetchTransaction()
     fetchPersonal()
     fetchBranches()
-    fetchTypetransaction()
+    fetchTventa()
+    fetchTpago()
+    fetchCliente()
+    fetchVehiculo()
   }, [])
 
   useEffect(() => {
@@ -60,7 +72,12 @@ export default function Regdeposito() {
         id_type_transaction (id, description),
         id_branch (id, name_branch),
         id_team (ci, name),
+        id_type_sale (id, atype),
+        id_type_pay (id, type_p),
+        id_customer (ci, name),
+        id_car (id, name, cost),
         amount,
+        c_inicial,
         detail,
         id_status (id, status)
       `)
@@ -69,20 +86,51 @@ export default function Regdeposito() {
       .eq("id_type_transaction", 8)
 
     if (error) console.error(error)
+      
     setTransaction(data || [])
   }
 
-  const fetchTypetransaction = async () => {
+  const fetchTventa = async () => {
     const { data, error } = await supabase
-      .from("type_transaction")
-      .select("id, description")
-      .in("id", [8]) 
+      .from("type_sale")
+      .select("id, atype")
       .order("id")
 
     if (error) console.error(error)
-    setTypetransaction(data || [])
+    setTventa(data || [])
   }
 
+  const fetchTpago = async () => {
+    const { data, error } = await supabase
+      .from("type_pay")
+      .select("id, type_p")
+      .order("id")
+
+    if (error) console.error(error)
+    setTpago(data || [])
+  }
+
+  const fetchCliente = async () => {
+    const { data, error } = await supabase
+      .from("customers")
+      .select("ci, name")
+      .order("ci")
+
+    if (error) console.error(error)
+      
+    setCliente(data || [])
+  }
+
+  const fetchVehiculo = async () => {
+    const { data, error } = await supabase
+      .from("cars")
+      .select("id, name, cost")
+      .order("id")
+
+    if (error) console.error(error)
+    setVehiculo(data || [])
+  }
+ 
   const fetchPersonal = async () => {
     const { data, error } = await supabase
       .from("team")
@@ -114,11 +162,15 @@ export default function Regdeposito() {
 
   const resetForm = () => {
     setForm({
-      id_type_transaction: "",
       id_branch: "",
       id_team: "",
-      amount: "",
-      detail: ""
+      id_type_sale: "",
+      id_type_pay: "",
+      amount:"",
+      detail:"",
+      id_customer: "",
+      id_car: "",
+      c_inicial:""
     })
   }
 
@@ -127,11 +179,8 @@ export default function Regdeposito() {
   const handleSubmit = async () => {
 
     if (
-      !form.id_type_transaction ||
-      !form.id_branch ||
-      !form.id_team ||
-      !form.amount ||
-      !form.detail
+      !form.id_type_pay ||
+      !form.c_inicial 
     ) {
       setMessage("Todos los campos son obligatorios")
       setMessageType("error")
@@ -144,6 +193,18 @@ export default function Regdeposito() {
       id_team: form.id_team,
       amount: Number(form.amount),
       detail: form.detail,
+
+      id_type_transaction: 8,
+      id_branch: Number(form.id_branch),
+      id_team: form.id_team,
+      id_type_sale: Number (form.id_type_sale),
+      id_type_pay: Number (form.id_type_pay),
+      amount: Number(form.amount),
+      detail: form.detail,
+      id_customer: Number (form.id_customer),
+      id_car: Number (form.id_car),
+      c_inicial: Number (form.c_inicial),
+
       id_status: 1
     }
 
@@ -199,11 +260,16 @@ export default function Regdeposito() {
     setMode("view")
 
     setForm({
-      id_type_transaction: row.id_type_transaction?.id || "",
       id_branch: row.id_branch?.id || "",
       id_team: row.id_team?.ci || "",
+      id_type_sale: row.id_type_sale?.id || "",
+      id_type_pay: row.id_type_pay?.id || "",
       amount: row.amount || "",
-      detail: row.detail || ""
+      detail: row.detail || "",
+      id_customer: row.id_customer?.ci || "",
+      id_car: row.id_car?.id ||"",
+      c_inicial: row.c_inicial || ""
+
     })
 
     setOpenModal(true)
@@ -214,11 +280,15 @@ export default function Regdeposito() {
     setMode("edit")
 
     setForm({
-      id_type_transaction: row.id_type_transaction?.id || "",
       id_branch: row.id_branch?.id || "",
       id_team: row.id_team?.ci || "",
+      id_type_sale: row.id_type_sale?.id || "",
+      id_type_pay: row.id_type_pay.id || "",
       amount: row.amount || "",
-      detail: row.detail || ""
+      detail: row.detail || "",
+      id_customer: row.id_customer?.ci || "",
+      id_car: row.id_car?.id || "",
+      c_inicial: row.c_inicial || ""
     })
 
     setOpenModal(true)
@@ -307,7 +377,7 @@ export default function Regdeposito() {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">
-          REGISTRAR SOLICITUD DE DEPÓSITO
+          CARGAR SOLICITUD DE DEPÓSITO
         </h2>
 
         <div className="flex gap-3">
@@ -351,7 +421,7 @@ export default function Regdeposito() {
       />
 
       {/* TABLA */}
-      <RegdeposritoTable
+      <RegdepositoTable
         data={filtered}
         onView={handleView}
         onEdit={handleEdit}
@@ -362,7 +432,7 @@ export default function Regdeposito() {
       {openModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
 
-          <div className="bg-white p-6 rounded-lg w-150">
+          <div className="bg-white p-6 rounded-lg w-200">
 
             {message && (
               <div className={`mb-4 p-2 rounded text-white ${
@@ -373,20 +443,13 @@ export default function Regdeposito() {
             )}
 
             <h2 className="text-xl font-bold mb-4">
-              {mode === "create" && "CARGAR NUEVO DEPÓSITO"}
-              {mode === "view" && "DETALLE DEL DEPÓSITO"}
-              {mode === "edit" && "EDITAR DETALLE"}
+              {mode === "create" && "REGISTRAR NUEVA SOLICITUD"}
+              {mode === "view" && "DETALLE DE LA SOLICITUD"}
+              {mode === "edit" && "EDITAR SOLICITUD"}
             </h2>
 
             <div className="grid grid-cols-2 gap-4">
 
-              <select name="id_type_transaction" value={form.id_type_transaction} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar el tipo de solicitud</option>
-                {typetransaction.map(r=>(
-                  <option key={r.id} value={r.id}>{r.description}</option>
-                ))}
-              </select>
-              
               <select name="id_branch" value={form.id_branch} onChange={handleChange} disabled={mode==="view"} className="border p-2">
                 <option value="">Seleccionar sucursal</option>
                 {branches.map(b=>(
@@ -401,9 +464,39 @@ export default function Regdeposito() {
                 ))}
               </select>
 
+              <select name="id_type_sale" value={form.id_type_sale} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+                <option value="">Seleccionar el tipo de venta</option>
+                {tventa.map(b=>(
+                  <option key={b.id} value={b.id}>{b.atype}</option>
+                ))}
+              </select>
+
+              <select name="id_type_pay" value={form.id_type_pay} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+                <option value="">Seleccionar el tipo de pago</option>
+                {tpago.map(b=>(
+                  <option key={b.id} value={b.id}>{b.type_p}</option>
+                ))}
+              </select>
+
               <input name="amount" value={form.amount} onChange={handleChange} disabled={mode==="view"} placeholder="Monto" className="border p-2"/>
               <input name="detail" value={form.detail} onChange={handleChange} disabled={mode==="view"} placeholder="Detalle" className="border p-2"/>
 
+              <select name="id_customer" value={form.id_customer} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+                <option value="">Seleccionar Cliente</option>
+                {cliente.map(b=>(
+                  <option key={b.ci} value={b.ci}>{b.name}</option>
+                ))}
+              </select>
+
+              <select name="id_car" value={form.id_car} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+                <option value="">Seleccionar el vehiculo</option>
+                {vehiculo.map(r=>(
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+
+              <input name="c_inicial" value={form.c_inicial} onChange={handleChange} disabled={mode==="view"} placeholder="Cuota inicial" className="border p-2"/>
+              
             </div>
 
             <div className="flex justify-end gap-3 mt-6">

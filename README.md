@@ -12,5 +12,10 @@
 # ver, editar y eliminar (cambiar el estado de status)
 # exportacion pdf y excel
 # pagina Sucursal y SucursalTable
-# depliegue inicial vercel nueva 
+# pagina Cargar transaccion y cargar transaccion table
+# Cargar la solicitud de deposito 
+# carga de solicitud de deposito completo, edcion, ver, y eliminar
+# siguiente feature, en este modulo view y validaciones
+# Carga de vehiculos y clientes
+
 

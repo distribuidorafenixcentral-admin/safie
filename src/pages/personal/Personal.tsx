@@ -20,6 +20,7 @@ export default function Personal() {
   const [mode, setMode] = useState<"create" | "view" | "edit">("create")
   const [selected, setSelected] = useState<any>(null)
 
+  // cargamos la tabla
   const [form, setForm] = useState({
     ci: "",
     name: "",
@@ -98,7 +99,7 @@ export default function Personal() {
     setBranches(data || [])
   }
 
-  // Recuperamos los datros de la tabla roles
+  // Re cuperamos los datros de la tabla roles
   const fetchRoles = async () => {
     const { data, error } = await supabase
       .from("role")
@@ -117,7 +118,7 @@ export default function Personal() {
     })
   }
 
-  // Resetea el formulario 
+  // resetear el formulario 
   const resetForm = () => {
     setForm({
       ci: "",
@@ -386,7 +387,7 @@ export default function Personal() {
         </h2>
 
         <div className="flex gap-3">
-
+          {/* BOTON NUEVO REGISTO*/}
           <button
             onClick={() => {
               setMode("create")
@@ -398,14 +399,14 @@ export default function Personal() {
             <Plus size={18}/>
             Nuevo
           </button>
-
+            {/* BOTON PDF*/}
           <button 
             onClick={exportToPDF}
             className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded">
             <FileText size={18}/>
             PDF
           </button>
-
+            {/* BOTON EXCEL*/}
           <button 
             onClick={exportToExcel}
             className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded">

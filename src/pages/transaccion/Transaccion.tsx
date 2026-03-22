@@ -75,7 +75,10 @@ export default function Transaccion() {
     const { data, error } = await supabase
       .from("type_transaction")
       .select("id, description")
+<<<<<<< HEAD
       .in("id", [1, 2, 7]) 
+=======
+>>>>>>> feature/cargartransaccion
       .order("id")
 
     if (error) console.error(error)
@@ -306,7 +309,11 @@ export default function Transaccion() {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">
+<<<<<<< HEAD
           SOLICTUDE DE PAGO
+=======
+          SOLICTUD DE DE PAGO
+>>>>>>> feature/cargartransaccion
         </h2>
 
         <div className="flex gap-3">
