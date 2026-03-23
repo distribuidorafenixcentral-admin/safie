@@ -91,7 +91,7 @@ export default function SucursalTable({
 
       <table className="w-full border border-black-200 ">
 
-        <thead className="bg-violet-800 text-white">
+        <thead className="bg-blue-600 text-white">
 
           {table.getHeaderGroups().map((headerGroup) => (
 

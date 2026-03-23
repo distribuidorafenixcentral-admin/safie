@@ -266,7 +266,7 @@ export default function Sucursal() {
     <div>
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">
+        <h2 className="text-2xl font-bold italic">
           REGISTO DE SUCURSAL
         </h2>
         <div className="flex gap-3">
@@ -340,8 +340,8 @@ export default function Sucursal() {
             </h2>
 
             <div className="grid grid-cols-2 gap-2">
-              <h3>Nombre de Sucursal</h3>
-              <h3>Dirección</h3>
+              <h3 className="text-blue-950 text-lg font-bold italic">Nombre de Sucursal</h3>
+              <h3 className="text-blue-950 text-lg font-bold italic">Dirección</h3>
               <input name="name_branch" value={form.name_branch} onChange={handleChange} disabled={mode !== "create"} placeholder="nombre de la sucursal" className="border p-2"/>
             
               <input name="adress_branch" value={form.adress_branch} onChange={handleChange} placeholder="Dirección" className="border p-2"/>

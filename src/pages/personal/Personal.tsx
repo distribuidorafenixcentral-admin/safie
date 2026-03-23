@@ -4,6 +4,8 @@ import PersonalTable from "./PersonalTable"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import { useConfirm } from "@/context/ConfirmContext"
+import { useToast } from "@/context/ToastContext"
 
 import { Plus, FileText, FileSpreadsheet } from "lucide-react"
 
@@ -19,6 +21,8 @@ export default function Personal() {
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
   const [mode, setMode] = useState<"create" | "view" | "edit">("create")
   const [selected, setSelected] = useState<any>(null)
+  const confirm = useConfirm()
+  const showToast = useToast()
 
   // cargamos la tabla
   const [form, setForm] = useState({
@@ -275,25 +279,26 @@ export default function Personal() {
   }
 
   // Eliminar el registro => cambia el status a 2
-  const handleDelete = async (row:any) => {
+  const handleDelete = (row:any) => {
+        confirm({
+          title: "Eliminar registro",
+          message: "¿Seguro que deseas eliminar este registro?",
+          confirmText: "Eliminar",
+          onConfirm: async () => {
+            const { error } = await supabase
+              .from("team")
+              .update({ status: 2 })
+              .eq("id", row.id)
 
-    const confirmDelete = confirm("¿Eliminar este registro?")
-    if (!confirmDelete) return
-
-    const { error } = await supabase
-      .from("team")
-      .update({ status: 2 })
-      .eq("id", row.id)
-
-    if (error) {
-      setMessage("Error al eliminar")
-      return
-    }
-
-    setMessage("Registro eliminado")
-    fetchPersonal()
-
-  }
+            if (error) {
+              showToast("Error al eliminar", "error")
+            } else {
+              showToast("Proceso concluido con éxito ✅", "success")
+              fetchPersonal()
+            }
+          }
+        })
+      }
 
   // EXPORTAR EXCEL
   const exportToExcel = () => {
@@ -346,7 +351,7 @@ export default function Personal() {
       "CI",
       "Nombre",
       "Celular",
-      "Fecha",
+      "F. Ingreso",
       "Sucursal",
       "Rol"
     ]
@@ -382,7 +387,7 @@ export default function Personal() {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
 
-        <h2 className="text-xl font-bold">
+        <h2 className="text-2xl italic font-bold">
           REGISTRO DE PERSONAL
         </h2>
 
@@ -440,7 +445,8 @@ export default function Personal() {
 
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
 
-          <div className="bg-white p-6 rounded-lg w-150">
+          <div className="bg-white p-6 rounded-lg w-200 border-2 border-black">
+            
 
             {message && (
               <div
@@ -454,33 +460,37 @@ export default function Personal() {
               </div>
             )}
 
-            <h2 className="text-xl font-bold mb-4">
+            <h2 className="text-xl font-bold italic mb-4">
               {mode === "create" && "REGISTRO DE PERSONAL NUEVO"}
               {mode === "view" && "DETALLE DEL TRABAJADOR"}
               {mode === "edit" && "EDITAR REGISTRO"}
             </h2>
 
-            <div className="grid grid-cols-2 gap-4">
-
+            <div className="grid grid-cols-2 gap-2">
+              <h3 className="text-blue-950 text-lg font-bold italic">C.I.</h3>
+              <h3 className="text-blue-950 text-lg font-bold italic" >Nombre</h3>                          
               <input name="ci" value={form.ci} onChange={handleChange} disabled={mode !== "create"} placeholder="CI" className="border p-2"/>
               <input name="name" value={form.name} onChange={handleChange} disabled={mode==="view"} placeholder="Nombre" className="border p-2"/>
+              <h3 className="text-blue-950 text-lg font-bold italic">Teléfono</h3>
+              <h3 className="text-blue-950 text-lg font-bold italic">Fecha de Ingreso</h3>
               <input name="celphone" value={form.celphone} onChange={handleChange} disabled={mode==="view"} placeholder="Celular" className="border p-2"/>
               <input name="stard_date" value={form.stard_date} onChange={handleChange} disabled={mode==="view"} type="date" className="border p-2"/>
-
+              <h3 className="text-blue-950 text-lg font-bold italic">Sucursal</h3>
+              <h3 className="text-blue-950 text-lg font-bold italic">Rol</h3>     
               <select name="id_branch" value={form.id_branch} onChange={handleChange} disabled={mode==="view"} className="border p-2">
                 <option value="">Seleccionar sucursal</option>
                 {branches.map(b=>(
                   <option key={b.id} value={b.id}>{b.name_branch}</option>
                 ))}
               </select>
-
               <select name="id_role" value={form.id_role} onChange={handleChange} disabled={mode==="view"} className="border p-2">
                 <option value="">Seleccionar rol</option>
                 {roles.map(r=>(
                   <option key={r.id} value={r.id}>{r.role}</option>
                 ))}
               </select>
-
+              <h3 className="text-blue-950 text-lg font-bold italic">Referencia</h3>
+              <h3 className="text-blue-950 text-lg font-bold italic">Cel. Referencia</h3>
               <input name="reference" value={form.reference} onChange={handleChange} disabled={mode==="view"} placeholder="Referencia" className="border p-2"/>
               <input name="celphon_ref" value={form.celphon_ref} onChange={handleChange} disabled={mode==="view"} placeholder="Celular referencia" className="border p-2"/>
 
