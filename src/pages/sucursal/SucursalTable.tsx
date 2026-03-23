@@ -89,9 +89,9 @@ export default function SucursalTable({
 
     <div className="mt-6">
 
-      <table className="w-full border border-gray-200">
+      <table className="w-full border border-black-200 ">
 
-        <thead className="bg-gray-100">
+        <thead className="bg-violet-800 text-white">
 
           {table.getHeaderGroups().map((headerGroup) => (
 
@@ -120,7 +120,7 @@ export default function SucursalTable({
 
           {table.getRowModel().rows.map((row) => (
 
-            <tr key={row.id} className="border-t hover:bg-gray-50">
+            <tr key={row.id} className="border-t bg-white odd:bg-gray-300 hover:bg-blue-50">
 
               {row.getVisibleCells().map((cell) => (
 

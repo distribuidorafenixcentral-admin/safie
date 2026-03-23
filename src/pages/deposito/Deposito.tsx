@@ -252,14 +252,14 @@ export default function Deposito() {
       setOpenModal(true)
     }
 
-  // Se da de baja el depósito cambiando el status a 3 => Rechazado
+  // Se da de baja el depósito cambiando el status a 6 => BAJA
   const handleDelete = async (row: any) => {
     const confirmDelete = confirm("¿Dar de baja el depósito?")
     if (!confirmDelete) return
 
     const { error } = await supabase
       .from("transactions")
-      .update({ id_status: 3 })
+      .update({ id_status: 6 })
       .eq("id", row.id)
 
     if (error) {
