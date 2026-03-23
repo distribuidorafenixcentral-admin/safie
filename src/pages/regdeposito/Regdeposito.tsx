@@ -4,6 +4,8 @@ import RegdepositoTable from "./RegdepositoTable"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import { useConfirm } from "@/context/ConfirmContext"
+import { useToast } from "@/context/ToastContext"
 
 import { Plus, FileText, FileSpreadsheet, } from "lucide-react"
 
@@ -25,6 +27,9 @@ export default function Regdeposito() {
   const [mode, setMode] = useState<"create" | "view" | "edit">("create")
   const [selected, setSelected] = useState<any>(null)
 
+  const confirm = useConfirm()
+  const showToast = useToast()
+  
   const [form, setForm] = useState({
     id_branch: "",
     id_team: "",
@@ -287,33 +292,36 @@ export default function Regdeposito() {
 
     setOpenModal(true)
   }
+  // eliminar registro cambia el id_status 6 => BAJA
+  const handleDelete = (row:any) => {
+        confirm({
+          title: "Eliminar registro",
+          message: "¿Seguro que deseas eliminar este registro?",
+          confirmText: "Eliminar",
+          onConfirm: async () => {
+            const { error } = await supabase
+              .from("transactions")
+              .update({ id_status: 6 })
+              .eq("id", row.id)
 
-  const handleDelete = async (row: any) => {
-    const confirmDelete = confirm("¿Eliminar este registro?")
-    if (!confirmDelete) return
+            if (error) {
+              showToast("Error al eliminar", "error")
+            } else {
+              showToast("Proceso concluido con éxito ✅", "success")
+              fetchTransaction()
+            }
+          }
+        })
+      }
 
-    const { error } = await supabase
-      .from("transactions")
-      .update({ id_status: 2 })
-      .eq("id", row.id)
-
-    if (error) {
-      setMessage("Error al eliminar")
-      return
-    }
-
-    setMessage("Registro eliminado")
-    fetchTransaction()
-  }
-
-  // ================= EXPORT =================
-
+  // Filtros de la busqueda
   const filtered = transaction.filter((p) =>
-    `${p.id_team?.name || ""} ${p.id_branch?.name_branch || ""} ${p.detail || ""}`
+    `${p.id_team?.name || ""} ${p.id_customer?.name || ""} ${p.detail || ""}`
       .toLowerCase()
       .includes(search.toLowerCase())
   )
 
+    // Exportacion 
   const exportToExcel = () => {
     if (filtered.length === 0) {
       setMessage("No hay datos para exportar")
@@ -323,17 +331,20 @@ export default function Regdeposito() {
 
     const dataExport = filtered.map((p) => ({
       ID: p.id,
-      T_Solicitud: p.id_type_transaction?.description,
-      Sucursal: p.id_branch?.name_branch,
-      Solicitante: p.id_team?.name || "",
+      Asesor: p.id_team?.name || "",
+      TVenta: p.id_type_sale?.atype || "",
+      TPago: p.id_type_pay?.type_p || "",
+      Cliente: p.id_customer?.name || "",
+      Vehiculo:p.id_car?.name ||"",      
       Monto: p.amount,
+      CInicial:p.c_inicial,
       Detalle: p.detail
     }))
 
     const worksheet = XLSX.utils.json_to_sheet(dataExport)
     const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Solicitudes")
-    XLSX.writeFile(workbook, "Solicitudes_Transacciones_Cargadas.xlsx")
+    XLSX.utils.book_append_sheet(workbook, worksheet, "DepositosCargados")
+    XLSX.writeFile(workbook, "Depositos_Cargadas.xlsx")
   }
 
   const exportToPDF = () => {
@@ -349,28 +360,31 @@ export default function Regdeposito() {
 
     const tableRows = filtered.map((p) => ([
       p.id,
-      p.id_type_transaction?.description,
-      p.id_branch?.name_branch,
-      p.id_team?.name || "",
+      p.id_team?.name ||"",
+      p.id_type_sale?.atype || "",
+      p.id_type_pay?.type_p || "",
+      p.id_customer?.name || "",
+      p.id_car?.name ||"",
       p.amount,
+      p.c_inicial,
       p.detail
     ]))
 
     autoTable(doc, {
-      head: [["ID","T. SOLICITUD","SUCURSAL","SOLICITANTE","MONTO","DETALLE"]],
+      head: [["ID","Asesor","T.Venta", "T.Pago", "Cliente","Vehículo", "Costo", "C.Inicial", "Detalle"]],
       body: tableRows,
       startY: 20
     })
 
-    doc.save("LoadSolTrans.pdf")
+    doc.save("LoadDepositos.pdf")
   }
 
   return (
     <div>
 
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold italic">
           CARGAR SOLICITUD DE DEPÓSITO
         </h2>
 
@@ -426,7 +440,7 @@ export default function Regdeposito() {
       {openModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
 
-          <div className="bg-white p-6 rounded-lg w-200">
+          <div className="bg-white p-6 rounded-lg w-200 border-2 border-black" >
 
             {message && (
               <div className={`mb-4 p-2 rounded text-white ${
@@ -436,14 +450,15 @@ export default function Regdeposito() {
               </div>
             )}
 
-            <h2 className="text-xl font-bold mb-4">
-              {mode === "create" && "REGISTRAR NUEVA SOLICITUD"}
+            <h2 className="text-xl font-bold italic mb-4">
+              {mode === "create" && "REGISTRAR DATOS DE DEPÓSITO"}
               {mode === "view" && "DETALLE DE LA SOLICITUD"}
               {mode === "edit" && "EDITAR SOLICITUD"}
             </h2>
 
-            <div className="grid grid-cols-2 gap-4">
-
+            <div className="grid grid-cols-2 gap-2">
+              <h3 className="text-blue-950 text-lg font-semibold italic">Sucursal</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Asesor</h3>
               <select name="id_branch" value={form.id_branch} onChange={handleChange} disabled={mode==="view"} className="border p-2">
                 <option value="">Seleccionar sucursal</option>
                 {branches.map(b=>(
@@ -457,7 +472,8 @@ export default function Regdeposito() {
                   <option key={b.ci} value={b.ci}>{b.name}</option>
                 ))}
               </select>
-
+                <h3 className="text-blue-950 text-lg font-semibold italic">Tipo de Venta</h3>
+                <h3 className="text-blue-950 text-lg font-semibold italic">Tipo de Pago</h3>
               <select name="id_type_sale" value={form.id_type_sale} onChange={handleChange} disabled={mode==="view"} className="border p-2">
                 <option value="">Seleccionar el tipo de venta</option>
                 {tventa.map(b=>(
@@ -471,10 +487,12 @@ export default function Regdeposito() {
                   <option key={b.id} value={b.id}>{b.type_p}</option>
                 ))}
               </select>
-
+                <h3 className="text-blue-950 text-lg font-semibold italic">Monto</h3>
+                <h3 className="text-blue-950 text-lg font-semibold italic">Detalle</h3>
               <input name="amount" value={form.amount} onChange={handleChange} disabled={mode==="view"} placeholder="Monto" className="border p-2"/>
               <input name="detail" value={form.detail} onChange={handleChange} disabled={mode==="view"} placeholder="Detalle" className="border p-2"/>
-
+                <h3 className="text-blue-950 text-lg font-semibold italic">Cliente</h3>
+                <h3 className="text-blue-950 text-lg font-semibold italic">Vehículo</h3>
               <select name="id_customer" value={form.id_customer} onChange={handleChange} disabled={mode==="view"} className="border p-2">
                 <option value="">Seleccionar Cliente</option>
                 {cliente.map(b=>(
@@ -488,7 +506,8 @@ export default function Regdeposito() {
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
               </select>
-
+                <h3 className="text-blue-950 text-lg font-semibold italic">Cuota Inicial</h3>
+                <br />
               <input name="c_inicial" value={form.c_inicial} onChange={handleChange} disabled={mode==="view"} placeholder="Cuota inicial" className="border p-2"/>
               
             </div>

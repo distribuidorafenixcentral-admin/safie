@@ -153,7 +153,7 @@ export default function RegdepositoTable({
               {headerGroup.headers.map((header) => (
                 
 
-                <th key={header.id} className="border-t bg-white odd:bg-gray-300 hover:bg-blue-50">
+                <th key={header.id} className="p-3 text-left font-semibold">
 
                   {flexRender(
                     header.column.columnDef.header,
@@ -174,7 +174,7 @@ export default function RegdepositoTable({
 
           {table.getRowModel().rows.map((row) => (
 
-            <tr key={row.id} className="border-t hover:bg-gray-50">
+            <tr key={row.id} className="border-t bg-white odd:bg-gray-300 hover:bg-blue-50">
 
               {row.getVisibleCells().map((cell) => (
 
