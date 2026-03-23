@@ -4,6 +4,8 @@ import SucursalTable from "@/pages/sucursal/SucursalTable"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import { useConfirm } from "@/context/ConfirmContext"
+import { useToast } from "@/context/ToastContext"
 
 import {Plus, FileText, FileSpreadsheet } from "lucide-react"
 
@@ -16,6 +18,8 @@ export default function Sucursal() {
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
   const [mode, setMode] = useState<"create" | "view" | "edit">("create")
   const [selected, setSelected] = useState<any>(null)
+  const confirm = useConfirm()
+  const showToast = useToast()
 
   const [form, setForm] = useState({
     name_branch: "",
@@ -177,20 +181,25 @@ export default function Sucursal() {
       }
     
       // Eliminar el registro => cambia el status a 2
-      const handleDelete = async (row:any) => {
-        const confirmDelete = confirm("¿Eliminar este registro?")
-        if (!confirmDelete) return
-        const { error } = await supabase
-          .from("branches")
-          .update({ status: 2 })
-          .eq("id", row.id)
-    
-        if (error) {
-          setMessage("Error al eliminar")
-          return
-        }
-        setMessage("Registro eliminado")
-        fetchSucursal()
+      const handleDelete = (row:any) => {
+        confirm({
+          title: "Eliminar registro",
+          message: "¿Seguro que deseas eliminar este registro?",
+          confirmText: "Eliminar",
+          onConfirm: async () => {
+            const { error } = await supabase
+              .from("branches")
+              .update({ status: 2 })
+              .eq("id", row.id)
+
+            if (error) {
+              showToast("Error al eliminar", "error")
+            } else {
+              showToast("Proceso concluido con éxito ✅", "success")
+              fetchSucursal()
+            }
+          }
+        })
       }
     
       // EXPORTAR EXCEL

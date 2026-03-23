@@ -13,6 +13,8 @@ import Deposito from "./pages/deposito/Deposito"
 import Regdeuda from "./pages/regdeuda/RegDeuda"
 import Deuda from "./pages/deuda/Deuda"
 import Memos from "./pages/memos/Memos"
+import { ConfirmProvider } from "./context/ConfirmContext"
+import { ToastProvider } from "./context/ToastContext"
 
 
 
@@ -39,7 +41,8 @@ function App() {
   }, [])
 
   return (
-
+    <ToastProvider>
+    <ConfirmProvider>
     <Routes>
 
       {/* Login */}
@@ -120,7 +123,8 @@ function App() {
       />
 
     </Routes>
-
+    </ConfirmProvider>
+    </ToastProvider>
   )
 }
 
