@@ -340,8 +340,8 @@ export default function Sucursal() {
             </h2>
 
             <div className="grid grid-cols-2 gap-2">
-              <h3 className="text-blue-950 text-lg font-bold italic">Nombre de Sucursal</h3>
-              <h3 className="text-blue-950 text-lg font-bold italic">Dirección</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Nombre de Sucursal</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Dirección</h3>
               <input name="name_branch" value={form.name_branch} onChange={handleChange} disabled={mode !== "create"} placeholder="nombre de la sucursal" className="border p-2"/>
             
               <input name="adress_branch" value={form.adress_branch} onChange={handleChange} placeholder="Dirección" className="border p-2"/>

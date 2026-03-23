@@ -467,16 +467,16 @@ export default function Personal() {
             </h2>
 
             <div className="grid grid-cols-2 gap-2">
-              <h3 className="text-blue-950 text-lg font-bold italic">C.I.</h3>
-              <h3 className="text-blue-950 text-lg font-bold italic" >Nombre</h3>                          
+              <h3 className="text-blue-950 text-lg font-semibold italic">C.I.</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic" >Nombre</h3>                          
               <input name="ci" value={form.ci} onChange={handleChange} disabled={mode !== "create"} placeholder="CI" className="border p-2"/>
               <input name="name" value={form.name} onChange={handleChange} disabled={mode==="view"} placeholder="Nombre" className="border p-2"/>
-              <h3 className="text-blue-950 text-lg font-bold italic">Teléfono</h3>
-              <h3 className="text-blue-950 text-lg font-bold italic">Fecha de Ingreso</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Teléfono</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Fecha de Ingreso</h3>
               <input name="celphone" value={form.celphone} onChange={handleChange} disabled={mode==="view"} placeholder="Celular" className="border p-2"/>
               <input name="stard_date" value={form.stard_date} onChange={handleChange} disabled={mode==="view"} type="date" className="border p-2"/>
-              <h3 className="text-blue-950 text-lg font-bold italic">Sucursal</h3>
-              <h3 className="text-blue-950 text-lg font-bold italic">Rol</h3>     
+              <h3 className="text-blue-950 text-lg font-semibold italic">Sucursal</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Rol</h3>     
               <select name="id_branch" value={form.id_branch} onChange={handleChange} disabled={mode==="view"} className="border p-2">
                 <option value="">Seleccionar sucursal</option>
                 {branches.map(b=>(
@@ -489,8 +489,8 @@ export default function Personal() {
                   <option key={r.id} value={r.id}>{r.role}</option>
                 ))}
               </select>
-              <h3 className="text-blue-950 text-lg font-bold italic">Referencia</h3>
-              <h3 className="text-blue-950 text-lg font-bold italic">Cel. Referencia</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Referencia</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Cel. Referencia</h3>
               <input name="reference" value={form.reference} onChange={handleChange} disabled={mode==="view"} placeholder="Referencia" className="border p-2"/>
               <input name="celphon_ref" value={form.celphon_ref} onChange={handleChange} disabled={mode==="view"} placeholder="Celular referencia" className="border p-2"/>
 

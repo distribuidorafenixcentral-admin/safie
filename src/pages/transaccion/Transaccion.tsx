@@ -4,6 +4,8 @@ import TransaccionTable from "./TransaccionTable"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import { useConfirm } from "@/context/ConfirmContext"
+import { useToast } from "@/context/ToastContext"
 
 import { Plus, FileText, FileSpreadsheet } from "lucide-react"
 
@@ -19,6 +21,9 @@ export default function Transaccion() {
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
   const [mode, setMode] = useState<"create" | "view" | "edit">("create")
   const [selected, setSelected] = useState<any>(null)
+
+  const confirm = useConfirm()
+  const showToast = useToast()
 
   const [form, setForm] = useState({
     id_type_transaction: "",
@@ -66,6 +71,7 @@ export default function Transaccion() {
       `)
       .order("id", { ascending: false })
       .eq("id_status", 1)
+      .in("id_type_transaction", [1, 2])
 
     if (error) console.error(error)
     setTransaction(data || [])
@@ -223,24 +229,26 @@ export default function Transaccion() {
     setOpenModal(true)
   }
 
-  const handleDelete = async (row: any) => {
-    const confirmDelete = confirm("¿Eliminar este registro?")
-    if (!confirmDelete) return
+  const handleDelete = (row:any) => {
+        confirm({
+          title: "Eliminar registro",
+          message: "¿Seguro que deseas eliminar este registro?",
+          confirmText: "Eliminar",
+          onConfirm: async () => {
+            const { error } = await supabase
+              .from("transactions")
+              .update({ id_status: 3 })
+              .eq("id", row.id)
 
-    const { error } = await supabase
-      .from("transactions")
-      .update({ id_status: 2 })
-      .eq("id", row.id)
-
-    if (error) {
-      setMessage("Error al eliminar")
-      return
-    }
-
-    setMessage("Registro eliminado")
-    fetchTransaction()
-  }
-
+            if (error) {
+              showToast("Error al eliminar", "error")
+            } else {
+              showToast("Proceso concluido con éxito ✅", "success")
+              fetchTransaction()
+            }
+          }
+        })
+      }
   // ================= EXPORT =================
 
   const filtered = transaction.filter((p) =>
@@ -305,8 +313,8 @@ export default function Transaccion() {
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">
-          SOLICTUD DE DE PAGO
+        <h2 className="text-2xl italic font-bold">
+          SOLICITUD DE DE PAGO
         </h2>
 
         <div className="flex gap-3">
@@ -361,7 +369,7 @@ export default function Transaccion() {
       {openModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
 
-          <div className="bg-white p-6 rounded-lg w-150">
+         <div className="bg-white p-6 rounded-lg w-200 border-2 border-black" >
 
             {message && (
               <div className={`mb-4 p-2 rounded text-white ${
@@ -371,15 +379,18 @@ export default function Transaccion() {
               </div>
             )}
 
-            <h2 className="text-xl font-bold mb-4">
+            <h2 className="text-xl font-bold italic mb-3">
               {mode === "create" && "REGISTRAR NUEVA SOLICITUD"}
               {mode === "view" && "DETALLE DE LA SOLICITUD"}
               {mode === "edit" && "EDITAR SOLICITUD"}
             </h2>
+            
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
 
-              <select name="id_type_transaction" value={form.id_type_transaction} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+              <h3 className="text-blue-950 text-lg font-semibold italic">Tipo de Solicitud</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Sucursal</h3>
+              <select name="id_type_transaction" value={form.id_type_transaction} onChange={handleChange}  disabled={mode==="view"} className="border p-2">
                 <option value="">Seleccionar el tipo de solicitud</option>
                 {typetransaction.map(r=>(
                   <option key={r.id} value={r.id}>{r.description}</option>
@@ -393,6 +404,8 @@ export default function Transaccion() {
                 ))}
               </select>
 
+              <h3 className="text-blue-950 text-lg font-semibold italic">Solicitante</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Monto</h3>
               <select name="id_team" value={form.id_team} onChange={handleChange} disabled={mode==="view"} className="border p-2">
                 <option value="">Seleccionar Solicitante</option>
                 {personal.map(b=>(
@@ -401,6 +414,8 @@ export default function Transaccion() {
               </select>
 
               <input name="amount" value={form.amount} onChange={handleChange} disabled={mode==="view"} placeholder="Monto" className="border p-2"/>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Detalle</h3>
+              <br />
               <input name="detail" value={form.detail} onChange={handleChange} disabled={mode==="view"} placeholder="Detalle" className="border p-2"/>
 
             </div>

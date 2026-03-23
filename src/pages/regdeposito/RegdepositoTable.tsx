@@ -144,15 +144,16 @@ export default function RegdepositoTable({
 
       <table className="w-full border border-gray-200">
 
-        <thead className="bg-gray-100">
+        <thead className="bg-blue-600 text-white">
 
           {table.getHeaderGroups().map((headerGroup) => (
 
             <tr key={headerGroup.id}>
 
               {headerGroup.headers.map((header) => (
+                
 
-                <th key={header.id} className="p-3 text-left font-semibold">
+                <th key={header.id} className="border-t bg-white odd:bg-gray-300 hover:bg-blue-50">
 
                   {flexRender(
                     header.column.columnDef.header,
