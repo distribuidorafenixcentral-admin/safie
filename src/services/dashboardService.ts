@@ -15,7 +15,7 @@ export const getTotalPersonal = async (): Promise<number> => {
 }
 
 // 📅 Helpers de fechas
-const getTodayRange = () => {
+/* const getTodayRange = () => {
   const start = new Date()
   start.setHours(0, 0, 0, 0)
 
@@ -43,4 +43,4 @@ const getMonthRange = () => {
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
 
   return { start, end }
-}
+} */
