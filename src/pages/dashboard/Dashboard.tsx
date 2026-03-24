@@ -1,6 +1,8 @@
 import DashboardLayout from "@/layouts/DashboardLayout"
 import StatCard from "@/components/cards/StarCard"
 import { Outlet, useLocation } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { getTotalPersonal } from "@/services/dashboardService"
 
 import {
   ArrowDownCircle,
@@ -15,6 +17,16 @@ import {
 export default function Dashboard() {
 
   const location = useLocation()
+  const [totalPersonal, setTotalPersonal] = useState(0)
+
+  useEffect(() => {
+  const loadData = async () => {
+    const total = await getTotalPersonal()
+    setTotalPersonal(total)
+  }
+
+  loadData()
+}, [])
 
   const showCards = location.pathname === "/dashboard"
 
@@ -68,9 +80,9 @@ export default function Dashboard() {
             iconColor="text-cyan-900"
             cardBg="bg-cyan-300"
           />
-          <StatCard
+         <StatCard
             title="Personal"
-            value="56"
+            value={totalPersonal.toString()}
             icon={<UserRound size={36} />}
             iconBg="bg-purple-200"
             iconColor="text-purple-900"
