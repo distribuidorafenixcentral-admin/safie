@@ -251,8 +251,8 @@ export default function Deuda() {
   return (
     <div>
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl text-red-800 font-bold italic">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-2xl text-blue-800 font-bold italic">
          DEPÓSITOS
         </h2>
 
@@ -294,8 +294,7 @@ export default function Deuda() {
       {openModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
 
-          <div className="bg-white p-6 rounded-lg w-200">
-
+         <div className="bg-white p-6 rounded-lg w-200 border-2 border-black" >
             {message && (
               <div className={`mb-4 p-2 rounded text-white ${
                 messageType === "error" ? "bg-red-500" : "bg-green-500"
@@ -304,30 +303,34 @@ export default function Deuda() {
               </div>
             )}
 
-            <h2 className="text-2xl font-bold mb-4 text-orange-600 italic">           
+            <h2 className="text-2xl font-bold mb-4 text-blue-800 italic">           
               {mode === "edit" && "DETALLE DE LA DEUDA"}
             </h2>
 
             <div className="grid grid-cols-2 gap-4">
 
-              <select name="id_branch" value={form.id_branch} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+              <select name="id_branch" value={form.id_branch} onChange={handleChange} disabled={mode==="edit"} className="border p-2">
                 <option value="">Seleccionar sucursal</option>
                 {branches.map(b=>(
                   <option key={b.id} value={b.id}>{b.name_branch}</option>
                 ))}
               </select>
 
-              <select name="id_team" value={form.id_team} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+              <select name="id_team" value={form.id_team} onChange={handleChange} disabled={mode==="edit"} className="border p-2">
                 <option value="">Seleccionar Solicitante</option>
                 {personal.map(b=>(
                   <option key={b.ci} value={b.ci}>{b.name}</option>
                 ))}
               </select>          
-
-              <input name="amount" value={form.amount} onChange={handleChange} disabled={mode==="view"} placeholder="Monto" className="border p-2"/>
-              <input name="detail" value={form.detail} onChange={handleChange} disabled={mode==="view"} placeholder="Detalle" className="border p-2"/>
+              <input name="detail" value={form.detail} onChange={handleChange} disabled={mode==="edit"} placeholder="Detalle" className="border p-2"/>
+              <br />
+              <div className="flex gap-6">
+              <input name="amount" value={form.amount} onChange={handleChange} disabled={mode==="edit"} placeholder="Monto" className="border p-2"/>
+              
               <input name="amortizado" value={form.amortizado} onChange={handleChange} disabled={mode==="view"} placeholder="Amotizado" className="border p-2"/>
               <input name="saldo" value={form.saldo} onChange={handleChange} disabled={mode==="view"} placeholder="Saldo" className="border p-2"/>
+              </div>
+             
             
             </div>
 

@@ -112,56 +112,34 @@ export default function DeudaTable({
 
       <table className="w-full border border-gray-200">
 
-        <thead className="bg-blue-500">
-
+        <thead className="bg-blue-600 text-white">
           {table.getHeaderGroups().map((headerGroup) => (
-
             <tr key={headerGroup.id}>
-
               {headerGroup.headers.map((header) => (
-
                 <th key={header.id} className="p-3 text-left font-semibold">
-
                   {flexRender(
                     header.column.columnDef.header,
                     header.getContext()
                   )}
-
                 </th>
-
               ))}
-
             </tr>
-
           ))}
-
         </thead>
-
         <tbody>
-
           {table.getRowModel().rows.map((row) => (
-
-            <tr key={row.id} className="border-t hover:bg-gray-50">
-
+            <tr key={row.id} className="border-t bg-white odd:bg-gray-300 hover:bg-blue-50">
               {row.getVisibleCells().map((cell) => (
-
                 <td key={cell.id} className="p-3">
-
                   {flexRender(
                     cell.column.columnDef.cell,
                     cell.getContext()
                   )}
-
                 </td>
-
               ))}
-
             </tr>
-
           ))}
-
         </tbody>
-
       </table>
 
       {/* PAGINACION */}

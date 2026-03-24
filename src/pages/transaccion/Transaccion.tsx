@@ -71,7 +71,7 @@ export default function Transaccion() {
       `)
       .order("id", { ascending: false })
       .eq("id_status", 1)
-      .in("id_type_transaction", [1, 2])
+      .in("id_type_transaction", [1, 2, 3, 4])
 
     if (error) console.error(error)
     setTransaction(data || [])
@@ -81,7 +81,7 @@ export default function Transaccion() {
     const { data, error } = await supabase
       .from("type_transaction")
       .select("id, description")
-      .in("id", [1, 2, 7]) 
+      .in("id", [1, 2, 3, 4]) 
       .order("id")
 
     if (error) console.error(error)
