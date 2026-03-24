@@ -3,9 +3,10 @@ import { supabase } from "@/lib/supabase"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-
 import {Plus, FileText, FileSpreadsheet } from "lucide-react"
 import VehiculoTable from "./VehiculoTable"
+import { useConfirm } from "@/context/ConfirmContext"
+import { useToast} from "@/context/ToastContext"
 
 export default function Vehiculo() {
 
@@ -17,6 +18,8 @@ export default function Vehiculo() {
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
   const [mode, setMode] = useState<"create" | "view" | "edit">("create")
   const [selected, setSelected] = useState<any>(null)
+  const confirm = useConfirm()
+  const showToast = useToast()
 
   const [form, setForm] = useState({
     id_marca: "",
@@ -177,21 +180,31 @@ export default function Vehiculo() {
       }
     
       // Eliminar el registro => cambia el status a 2
-      const handleDelete = async (row:any) => {
-        const confirmDelete = confirm("¿Eliminar este registro?")
-        if (!confirmDelete) return
-        const { error } = await supabase
-          .from("cars")
-          .update({ status: 2 })
-          .eq("id", row.id)
-    
-        if (error) {
-          setMessage("Error al eliminar")
-          return
-        }
-        setMessage("Registro eliminado")
-        fetchVehiculo()
+      const handleDelete = (row:any) => {
+        confirm({
+          title: "Eliminar registro",
+          message: "¿Seguro que deseas eliminar este registro?",
+          confirmText: "Eliminar",
+          onConfirm: async () => {
+            const { error } = await supabase
+              .from("cars")
+              .update({ status: 2 })
+              .eq("id", row.id)
+
+            if (error) {
+              showToast("Error al eliminar", "error")
+            } else {
+              showToast("Proceso concluido con éxito ✅", "success")
+              fetchVehiculo()
+            }
+          }
+        })
       }
+
+        // Filtro del buscador nombre del vehiculo
+      const filtered = vehiculo.filter((p) =>
+        p.name?.toLowerCase().includes(search.toLowerCase())       
+      )
     
       // EXPORTAR EXCEL
       const exportToExcel = () => {
@@ -255,15 +268,14 @@ export default function Vehiculo() {
         })
         doc.save("ListaVehiculos.pdf")
       }
-      const filtered = vehiculo.filter((p) =>
-        p.name?.toLowerCase().includes(search.toLowerCase())       
-      )
+      
+     
 
   return (
     <div>
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">
+        <h2 className="text-2xl font-bold italic">
           REGISTRO DE VEHICULOS
         </h2>
         <div className="flex gap-3">
@@ -317,7 +329,7 @@ export default function Vehiculo() {
       {/* MODAL */}
       {openModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-150">
+          <div className="bg-white p-6 rounded-lg w-200 border-2 border-black" >
 
             {message && (
               <div
@@ -331,14 +343,18 @@ export default function Vehiculo() {
               </div>
             )}
 
-            <h2 className="text-xl font-bold mb-4">
+            <h2 className="text-xl font-bold mb-4 italic">
               {mode === "create" && "REGISTRO VEHICULO"}
               {mode === "edit" && "EDITAR REGISTRO"}
             </h2>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
+              <h3 className="text-blue-950 text-lg font-semibold italic">Marca</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Vehículo</h3>
               <input name="id_marca" value={form.id_marca} onChange={handleChange} placeholder="marca" className="border p-2"/>
               <input name="name" value={form.name} onChange={handleChange} placeholder="Vehículo" className="border p-2"/>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Modelo</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Costo</h3>
               <input name="modelo" value={form.modelo} onChange={handleChange} placeholder="Modelo" className="border p-2"/>
               <input name="cost" value={form.cost} onChange={handleChange} placeholder="costo" className="border p-2"/>
             </div>
