@@ -4,6 +4,8 @@ import ClienteTable from "./ClienteTable"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import { useConfirm } from "@/context/ConfirmContext"
+import { useToast} from "@/context/ToastContext"
 
 import {Plus, FileText, FileSpreadsheet } from "lucide-react"
 
@@ -16,6 +18,8 @@ export default function Cliente() {
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
   const [mode, setMode] = useState<"create" | "view" | "edit">("create")
   const [selected, setSelected] = useState<any>(null)
+  const confirm = useConfirm()
+  const showToast = useToast()
 
   const [form, setForm] = useState({
     id: "",
@@ -202,22 +206,33 @@ export default function Cliente() {
       }
     
       // Eliminar el registro => cambia el status a 2
-      const handleDelete = async (row:any) => {
-        const confirmDelete = confirm("¿Eliminar este registro?")
-        if (!confirmDelete) return
-        const { error } = await supabase
-          .from("customers")
-          .update({ status: 2 })
-          .eq("id", row.id)
-    
-        if (error) {
-          setMessage("Error al eliminar")
-          return
+      const handleDelete = (row:any) => {
+          confirm({
+            title: "Eliminar registro",
+            message: "¿Seguro que deseas eliminar este registro?",
+            confirmText: "Eliminar",
+            onConfirm: async () => {
+              const { error } = await supabase
+                .from("customers")
+                .update({ status: 2 })
+                .eq("id", row.id)
+
+              if (error) {
+                showToast("Error al eliminar", "error")
+              } else {
+                showToast("Proceso concluido con éxito ✅", "success")
+                fetchCliente()
+              }
+            }
+          })
         }
-        setMessage("Registro eliminado")
-        fetchCliente()
-      }
-    
+      
+       // buscador        
+       const filtered = cliente.filter((p) =>
+        `${p.ci || ""} ${p.name || ""} ${p.celphone || ""} ${p.detail || ""} ${p.reference || ""}`
+          .toLowerCase()
+          .includes(search.toLowerCase())
+      )
       // EXPORTAR EXCEL
       const exportToExcel = () => {
         if (filtered.length === 0) {
@@ -283,16 +298,14 @@ export default function Cliente() {
         })
         doc.save("ListaClientes.pdf")
       }
-      const filtered = cliente.filter((p) =>
-        p.name?.toLowerCase().includes(search.toLowerCase())
-      )
+     
 
   return (
     <div>
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">
-          REGISTO DE CLIENTE
+        <h2 className="text-2xl italic font-bold">
+          REGISTRO DE CLIENTE
         </h2>
         <div className="flex gap-3">
           {/* BOTON REGISTRO NUEVO*/}
@@ -345,8 +358,7 @@ export default function Cliente() {
       {/* MODAL */}
       {openModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-150">
-
+          <div className="bg-white p-6 rounded-lg w-200 border-2 border-black" >
             {message && (
               <div
                 className={`mb-4 p-2 rounded text-white ${
@@ -364,11 +376,17 @@ export default function Cliente() {
               {mode === "edit" && "EDITAR REGISTRO"}
             </h2>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
+              <h3 className="text-blue-950 text-lg font-semibold italic">C.I.</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Nombre</h3>
               <input name="ci" value={form.ci} onChange={handleChange} placeholder="CI" className="border p-2"/>
               <input name="name" value={form.name} onChange={handleChange} placeholder="Nombre" className="border p-2"/>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Teléfono</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Referencia</h3>
               <input name="celphone" value={form.celphone} onChange={handleChange}  placeholder="Celular" className="border p-2"/>
               <input name="reference" value={form.reference} onChange={handleChange} placeholder="Referencia" className="border p-2"/>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Ciudad</h3>
+              <br />
               <input name="id_ciudad" value={form.id_ciudad} onChange={handleChange}  placeholder="Ciudad" className="border p-2"/>
             </div>
 
