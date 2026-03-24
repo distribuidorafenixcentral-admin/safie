@@ -249,7 +249,7 @@ export default function Regdeuda() {
     const worksheet = XLSX.utils.json_to_sheet(dataExport)
     const workbook = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook, worksheet, "Deuda")
-    XLSX.writeFile(workbook, "RegistroDeuda.xlsx")
+    XLSX.writeFile(workbook, "RegistroDeudasVigentes.xlsx")
   }
 
   // Exportar PDF
@@ -286,7 +286,7 @@ export default function Regdeuda() {
     <div>
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl text-violet-900 font-bold italic">
+        <h2 className="text-2xl font-bold italic">
           REGISTRO DE DEUDAS
         </h2>
         <div className="flex gap-3">
@@ -335,7 +335,7 @@ export default function Regdeuda() {
       {/* MODAL */}
       {openModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-150">
+          <div className="bg-white p-6 rounded-lg w-200 border-2 border-black" >
             {message && (
               <div className={`mb-4 p-2 rounded text-white ${
                 messageType === "error" ? "bg-red-500" : "bg-green-500"
@@ -349,8 +349,9 @@ export default function Regdeuda() {
               {mode === "edit" && "EDITAR SOLICITUD"}
             </h2>
 
-            <div className="grid grid-cols-2 gap-4">             
-              
+            <div className="grid grid-cols-2 gap-2">             
+              <h3 className="text-blue-950 text-lg font-semibold italic">Sucursal</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Solicitante</h3>
               <select name="id_branch" value={form.id_branch} onChange={handleChange} disabled={mode==="view"} className="border p-2">
                 <option value="">Seleccionar sucursal</option>
                 {branches.map(b=>(
@@ -363,6 +364,8 @@ export default function Regdeuda() {
                   <option key={b.ci} value={b.ci}>{b.name}</option>
                 ))}
               </select>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Monto</h3>
+              <h3 className="text-blue-950 text-lg font-semibold italic">Detalle</h3>
               <input name="amount" value={form.amount} onChange={handleChange} disabled={mode==="view"} placeholder="Monto" className="border p-2"/>
               <input name="detail" value={form.detail} onChange={handleChange} disabled={mode==="view"} placeholder="Detalle" className="border p-2"/>
             </div>

@@ -112,7 +112,7 @@ export default function DeudaTable({
 
       <table className="w-full border border-gray-200">
 
-        <thead className="bg-gray-100">
+        <thead className="bg-blue-500">
 
           {table.getHeaderGroups().map((headerGroup) => (
 

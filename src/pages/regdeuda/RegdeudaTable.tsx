@@ -108,7 +108,7 @@ export default function RegdeudaTable({
 
       <table className="w-full border border-gray-200">
 
-        <thead className="bg-gray-100">
+        <thead className="bg-blue-600 text-white">
 
           {table.getHeaderGroups().map((headerGroup) => (
 
@@ -137,7 +137,7 @@ export default function RegdeudaTable({
 
           {table.getRowModel().rows.map((row) => (
 
-            <tr key={row.id} className="border-t hover:bg-gray-50">
+            <tr key={row.id} className="border-t bg-white odd:bg-gray-300 hover:bg-blue-50">
 
               {row.getVisibleCells().map((cell) => (
 
