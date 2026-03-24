@@ -4,8 +4,9 @@ import DepositoTable from "./DepositoTable"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-
 import { FileText, FileSpreadsheet, } from "lucide-react"
+import { useConfirm } from "@/context/ConfirmContext"
+import { useToast } from "@/context/ToastContext"
 
 export default function Deposito() {
 
@@ -25,6 +26,8 @@ export default function Deposito() {
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
   const [mode, setMode] = useState<"view" | "edit">("view")
   const [selected, setSelected] = useState<any>(null)
+  const confirm = useConfirm()
+  const showToast = useToast()
 
   //formualario
   const [form, setForm] = useState({
@@ -253,60 +256,67 @@ export default function Deposito() {
     }
 
   // Se da de baja el depósito cambiando el status a 6 => BAJA
-  const handleDelete = async (row: any) => {
-    const confirmDelete = confirm("¿Dar de baja el depósito?")
-    if (!confirmDelete) return
+   const handleDelete = (row:any) => {
+        confirm({
+          title: "Eliminar registro",
+          message: "¿Seguro que deseas eliminar este registro?",
+          confirmText: "Eliminar",
+          onConfirm: async () => {
+            const { error } = await supabase
+              .from("transactions")
+              .update({ id_status: 6 })
+              .eq("id", row.id)
 
-    const { error } = await supabase
-      .from("transactions")
-      .update({ id_status: 6 })
-      .eq("id", row.id)
+            if (error) {
+              showToast("Error al eliminar", "error")
+            } else {
+              showToast("Proceso concluido con éxito ✅", "success")
+              fetchTransaction()
+            }
+          }
+        })
+      }
 
-    if (error) {
-      setMessage("Error al dar de baja")
-      return
+    // Se confirma el depósito cambiando el status a 2 => Pagado
+    const handleConfirmar = () => {
+      confirm({
+        title: "CONFIRMAR DEPÓSITO",
+        message: "¿Seguro que deseas confirmar el depósito?",
+        confirmText: "Confirmar",
+
+        onConfirm: async () => {
+          if (!selected?.id) {
+            showToast("ID no válido", "error")
+            return
+          }
+
+          const { error } = await supabase
+            .from("transactions")
+            .update({ id_status: 2 })
+            .eq("id", selected.id)
+
+          if (error) {
+            showToast("Error al confirmar", "error")
+          } else {
+            showToast("Proceso concluido con éxito ✅", "success")
+            fetchTransaction()
+            setOpenModal(false) 
+          }
+        }
+      })
     }
 
-    setMessage("Registro dado de baja")
-    fetchTransaction()
-  }
-
-  // Se confirma el depósito cambiando el status a 2 => Pagado
-  const handleConfirmar = async () => {
-  if (!selected) return
-
-  const confirmPay = confirm("¿Confirmar el depósito?")
-  if (!confirmPay) return
-
-  const { error } = await supabase
-    .from("transactions")
-    .update({ id_status: 2 })
-    .eq("id", selected.id)
-
-  if (error) {
-    setMessage("Error DB")
-    return
-  }
-
-    setMessage("Depósito confirmado")
-     setTimeout(() => {
-      setOpenModal(false)        
-      setMessage("")
-      setMessageType("")
-    }, 1500)
-   
-  fetchTransaction()
-}
-
-  // ================= EXPORT =================
-
+  
+  // BUSCADOR
   // Filtro asesor, sucursal, detalle, tipo de venta, tipo de pago, cliente
   const filtered = transaction.filter((p) =>
-    `${p.id_team?.name || ""} ${p.id_branch?.name_branch || ""} ${p.id_customer?.name || ""} ${p.detail || ""} ${p.id_type_sale?.atype || ""} ${p.id_type_pay?.type_p || ""}`
+    `${p.id_team?.name || ""} ${p.id_branch?.name_branch || ""} ${p.id_customer?.name || ""} 
+      ${p.detail || ""} ${p.id_type_sale?.atype || ""} ${p.id_type_pay?.type_p || ""} ${p.amount} ${p.c_inicial}`
       .toLowerCase()
       .includes(search.toLowerCase())
   )
 
+  // EXPORT
   //Excel
   const exportToExcel = () => {
     if (filtered.length === 0) {
@@ -316,18 +326,23 @@ export default function Deposito() {
     }
 
     const dataExport = filtered.map((p) => ({
-      ID: p.id,
-      T_Solicitud: p.id_type_transaction?.description,
+      ID: p.id,      
       Sucursal: p.id_branch?.name_branch,
-      Solicitante: p.id_team?.name || "",
-      Monto: p.amount,
+      Solicitante: p.id_team?.name,
+      T_Venta: p.id_type_sale?.atype,
+      T_Pago: p.id_type_pay?.type_p,
+      Cliente: p.id_customer?.name,
+      Vehiculo: p.id_car?.name,
+      Costo: p.amount,
+      
+      C_Inicial: p.c_inicial,    
       Detalle: p.detail
     }))
 
     const worksheet = XLSX.utils.json_to_sheet(dataExport)
     const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Solicitudes")
-    XLSX.writeFile(workbook, "Solicitudes_Transacciones_Cargadas.xlsx")
+    XLSX.utils.book_append_sheet(workbook, worksheet, "DepxProcesar")
+    XLSX.writeFile(workbook, "Depositos_por_procesar.xlsx")
   }
 
   //PDF
@@ -340,32 +355,36 @@ export default function Deposito() {
 
     const doc = new jsPDF()
 
-    doc.text("Solicitudes de Pagos Cargadas", 14, 10)
+    doc.text("Depositos Por Procesar", 14, 10)
 
     const tableRows = filtered.map((p) => ([
       p.id,
-      p.id_type_transaction?.description,
       p.id_branch?.name_branch,
-      p.id_team?.name || "",
+      p.id_team?.name,
+      p.id_type_sale?.atype,
+      p.id_type_pay?.type_p,
+      p.id_customer?.name,
+      p.id_car?.name,
       p.amount,
+      p.c_inicial,
       p.detail
     ]))
 
     autoTable(doc, {
-      head: [["ID","T. SOLICITUD","SUCURSAL","SOLICITANTE","MONTO","DETALLE"]],
+      head: [["ID", "SUCURSAL","ASESOR","T.VENTA", "T.PAGO","CLIENTE", "VEHICULO", "COSTO", "C.INICIAL","DETALLE"]],
       body: tableRows,
       startY: 20
     })
 
-    doc.save("LoadSolTrans.pdf")
+    doc.save("DepositoPorProcesar.pdf")
   }
 
   // Vista del archivo
   return (
     <div>
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl text-red-800 font-bold italic">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-2xl text-blue-800 font-bold italic">
          DEPÓSITOS
         </h2>
 
@@ -407,9 +426,7 @@ export default function Deposito() {
       {/* MODAL */}
       {openModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-
-          <div className="bg-white p-6 rounded-lg w-200">
-
+          <div className="bg-white p-6 rounded-lg w-200 border-2 border-black" >
             {message && (
               <div className={`mb-4 p-2 rounded text-white ${
                 messageType === "error" ? "bg-red-500" : "bg-green-500"
@@ -418,62 +435,73 @@ export default function Deposito() {
               </div>
             )}
 
-            <h2 className="text-2xl font-bold mb-4 text-green-800 italic">           
+            <h2 className="text-2xl font-bold mb-4 text-blue-800 italic">           
               {mode === "edit" && "CONFIRMACION DE DEPÓSITO"}
             </h2>
-
-            <div className="grid grid-cols-2 gap-4">
-
+            <hr className="mb-4"/>
+            <h2 className="text-xl text-red-600 font-semibold italic mt-2 mb-2"> Datos Sucursal / Asesor</h2>
+            
+            {/* Formulario */}
+            <div className="grid grid-cols-2 gap-2">             
               <select name="id_branch" value={form.id_branch} onChange={handleChange} disabled={mode==="view"} className="border p-2">
                 <option value="">Seleccionar sucursal</option>
                 {branches.map(b=>(
                   <option key={b.id} value={b.id}>{b.name_branch}</option>
                 ))}
               </select>
-
               <select name="id_team" value={form.id_team} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar Solicitante</option>
+                <option value="">Seleccionar Asesor</option>
                 {personal.map(b=>(
                   <option key={b.ci} value={b.ci}>{b.name}</option>
                 ))}
-              </select>
+              </select> 
 
-              <select name="id_type_sale" value={form.id_type_sale} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar el tipo de venta</option>
-                {tventa.map(b=>(
-                  <option key={b.id} value={b.id}>{b.atype}</option>
-                ))}
-              </select>
-
-              <select name="id_type_pay" value={form.id_type_pay} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar el tipo de pago</option>
-                {tpago.map(b=>(
-                  <option key={b.id} value={b.id}>{b.type_p}</option>
-                ))}
-              </select>
-
-              <input name="amount" value={form.amount} onChange={handleChange} disabled={mode==="view"} placeholder="Monto" className="border p-2"/>
-              <input name="detail" value={form.detail} onChange={handleChange} disabled={mode==="view"} placeholder="Detalle" className="border p-2"/>
-
-              <select name="id_customer" value={form.id_customer} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar Cliente</option>
-                {cliente.map(b=>(
-                  <option key={b.ci} value={b.ci}>{b.name}</option>
-                ))}
-              </select>
-
+               <h2 className="text-xl text-red-600 font-semibold italic mt-2"> Datos Vehículo</h2>
+               <br />             
               <select name="id_car" value={form.id_car} onChange={handleChange} disabled={mode==="view"} className="border p-2">
                 <option value="">Seleccionar el vehiculo</option>
                 {vehiculo.map(r=>(
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
               </select>
+              <input name="amount" value={form.amount} onChange={handleChange} disabled={mode==="view"} placeholder="Monto" className="border p-2"/>
 
+              <h2 className="text-xl text-red-600 font-semibold italic mt-2"> Datos Cliente</h2>
+              <br />             
+            
+              <select name="id_customer" value={form.id_customer} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+                <option value="">Seleccionar Cliente</option>
+                {cliente.map(b=>(
+                  <option key={b.ci} value={b.ci}>{b.name}</option>
+                ))}
+              </select>
+              <br />
+              <h2 className="text-xl text-red-600 font-semibold italic mt-2"> Datos Depósito</h2>
+              <br />                         
+              <select name="id_type_sale" value={form.id_type_sale} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+                <option value="">Seleccionar el tipo de venta</option>
+                {tventa.map(b=>(
+                  <option key={b.id} value={b.id}>{b.atype}</option>
+                ))}
+              </select>
               <input name="c_inicial" value={form.c_inicial} onChange={handleChange} disabled={mode==="view"} placeholder="Cuota inicial" className="border p-2"/>
               
+              <h3 className="text-blue-950 text-lg font-semibold italic">T. Pago</h3>
+              <br />
+              <select name="id_type_pay" value={form.id_type_pay} onChange={handleChange} disabled={mode==="view"} className="border p-2">
+                <option value="">Seleccionar el tipo de pago</option>
+                {tpago.map(b=>(
+                  <option key={b.id} value={b.id}>{b.type_p}</option>
+                ))}
+              </select>
+              <br />
+             
+              <h3 className="text-blue-950 text-lg font-semibold italic">Detalle</h3>
+              <br />             
+              <input name="detail" value={form.detail} onChange={handleChange} disabled={mode==="view"} placeholder="Detalle" className="border p-2"/>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex justify-end gap-3 mt-8">
 
               <button
                 onClick={()=>setOpenModal(false)}
