@@ -4,8 +4,10 @@ import MemosTable from "./MemosTable"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import { logo64 } from "@/utils/pdf/logo64"
 
 import { Plus, FileText, FileSpreadsheet } from "lucide-react"
+import { generatePDF } from "@/utils/pdf/templates/pdfTemplates"
 
 // 🔹 REGLAS TIPO DE PAGO
 const TYPE_PAY_RULES: Record<number, { requireBank: boolean }> = {
@@ -48,6 +50,30 @@ export default function Memos() {
     form.id_branch ? p.id_branch == form.id_branch : true
   )
 
+
+  //Imprimir el documento para firma
+  
+  const handleExport = () => {
+  const header = {
+    title: "Reporte de Depósitos",
+    subtitle: "Sistema Financiero",
+    date: new Date().toLocaleDateString(),
+    logo: logo64 
+  }
+
+  const table = {
+    head: ["Banco", "Titular", "Monto", "Detalle"],
+    body: transaction.map(item => [
+  item.id_cuenta?.banco,
+  item.id_cuenta?.titular,
+  item.amount,
+  item.detail
+])  
+  }
+
+  const doc = generatePDF(header, table)
+  doc.output("dataurlnewwindow") 
+}
   useEffect(() => {
     fetchTransaction()
     fetchPersonal()
@@ -230,26 +256,10 @@ export default function Memos() {
     }, 1500)
 
     fetchTransaction()
+    handleExport()
   }
 
-  // ================= ACCIONES =================
-
-  const handleView = (row: any) => {
-    setSelected(row)
-    setMode("view")
-
-    setForm({
-      id_type_transaction: row.id_type_transaction?.id || "",
-      id_branch: row.id_branch?.id || "",
-      id_team: row.id_team?.ci || "",
-      id_cuenta: row.id_cuenta?.id || "",
-      id_type_pay: row.id_type_pay?.id || "",
-      amount: row.amount || "",
-      detail: row.detail || ""
-    })
-
-    setOpenModal(true)
-  }
+  // 
 
   // Filtro del buscador
 
@@ -366,7 +376,7 @@ export default function Memos() {
       />
 
       {/* TABLA */}
-      <MemosTable data={filtered} onView={handleView} />
+      <MemosTable data={filtered} onView={handleExport} />
 
       {/* MODAL */}
       {openModal && (
