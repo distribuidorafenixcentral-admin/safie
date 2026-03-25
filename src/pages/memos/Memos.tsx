@@ -163,12 +163,13 @@ export default function Memos() {
 
   const handleSubmit = async () => {
 
+
     if (
-      !form.id_type_transaction ||
       !form.id_branch ||
+      !form.id_type_pay ||
       !form.id_team ||
       !form.amount ||
-      !form.detail
+      !form.detail 
     ) {
       setMessage("Todos los campos son obligatorios")
       setMessageType("error")
@@ -176,14 +177,14 @@ export default function Memos() {
     }
 
     const payload = {
-      id_type_transaction: Number(form.id_type_transaction),
+      id_type_transaction: 9,
       id_branch: Number(form.id_branch),
       id_team: form.id_team,
-      id_cuenta: requireBank ? Number(form.id_cuenta) : null, // 🔹 lógica
+      id_cuenta: requireBank ? Number(form.id_cuenta) : null, 
       id_type_pay: Number(form.id_type_pay),
       amount: Number(form.amount),
       detail: form.detail,
-      id_status: 1
+      id_status: 2
     }
 
     if (mode === "create") {
@@ -250,7 +251,7 @@ export default function Memos() {
     setOpenModal(true)
   }
 
-  // ================= FILTRO =================
+  // Filtro del buscador
 
   const filtered = transaction.filter((p) =>
     `${p.id_team?.name || ""} ${p.id_branch?.name_branch || ""}
@@ -260,7 +261,7 @@ export default function Memos() {
       .includes(search.toLowerCase())
   )
 
-  // ================= EXPORT =================
+  // Export PDF
 
   const exportToExcel = () => {
     if (filtered.length === 0) {
@@ -271,17 +272,20 @@ export default function Memos() {
 
     const dataExport = filtered.map((p) => ({
       ID: p.id,
-      T_Solicitud: p.id_type_transaction?.description,
       Sucursal: p.id_branch?.name_branch,
-      Solicitante: p.id_team?.name || "",
+      Personal: p.id_team?.name || "",
+      T_Pago: p.id_type_pay?.type_p,
+      Banco: p.id_cuenta?.banco,
+      N_Cuenta: p.id_cuenta?.numero_cta,
+      Titular: p.id_cuenta?.titular,
       Monto: p.amount,
       Detalle: p.detail
     }))
 
     const worksheet = XLSX.utils.json_to_sheet(dataExport)
     const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Solicitudes")
-    XLSX.writeFile(workbook, "Solicitudes_Transacciones_Cargadas.xlsx")
+    XLSX.utils.book_append_sheet(workbook, worksheet, "HisMemos")
+    XLSX.writeFile(workbook, "Historial_Memos_Sanciones.xlsx")
   }
 
   const exportToPDF = () => {
@@ -293,24 +297,27 @@ export default function Memos() {
 
     const doc = new jsPDF()
 
-    doc.text("Solicitudes de Pagos Cargadas", 14, 10)
+    doc.text("Historial de Memos y Sanciones", 14, 10)
 
     const tableRows = filtered.map((p) => ([
       p.id,
-      p.id_type_transaction?.description,
       p.id_branch?.name_branch,
       p.id_team?.name || "",
+      p.id_type_pay?.type_p,
+      p.id_cuenta?.banco,
+      p.id_cuenta?.numero_cta,
+      p.id_cuenta?.titular,
       p.amount,
       p.detail
     ]))
 
     autoTable(doc, {
-      head: [["ID","T. SOLICITUD","SUCURSAL","SOLICITANTE","MONTO","DETALLE"]],
+      head: [["ID","SUCURSAL", "PERSONAL", "T.PAGO",  "BANCO","N° CUENTA","TITULAR","MONTO","DETALLE"]],
       body: tableRows,
       startY: 20
     })
 
-    doc.save("LoadSolTrans.pdf")
+    doc.save("HistorialMemosSanciones.pdf")
   }
 
   return (
