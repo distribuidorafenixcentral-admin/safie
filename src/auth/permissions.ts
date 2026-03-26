@@ -1,0 +1,44 @@
+import type { Role } from "./roles"
+
+export const PERMISSIONS = {
+  // Genérico
+  //Sucursales
+  CREATE_BRANCH: "CREATE_BRANCH",
+  CREATE: "CREATE",
+  EDIT: "EDIT",
+  DELETE: "DELETE",
+  VIEW: "VIEW",
+  // Personal
+  CREATE_PERSONAL: "CREATE_PERSONAL",
+  // Transacciones
+  CREATE_DEUDA: "CREATE_DEUDA"
+} as const
+
+export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]
+
+export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
+  ADMIN: [
+    PERMISSIONS.CREATE,
+    PERMISSIONS.EDIT,
+    PERMISSIONS.DELETE,
+    PERMISSIONS.VIEW,
+  ],
+  
+  GERENTE: [
+    PERMISSIONS.CREATE_BRANCH,
+    PERMISSIONS.CREATE_PERSONAL,
+    PERMISSIONS.CREATE_DEUDA,
+    PERMISSIONS.VIEW,
+  ],
+  JEFE_PERSONAL: [
+    PERMISSIONS.CREATE_PERSONAL,
+    PERMISSIONS.EDIT,
+    PERMISSIONS.VIEW,
+  ],
+  ASESOR_FINANCIERO: [
+    PERMISSIONS.VIEW,
+  ],
+  ASESOR_VENTAS: [
+    PERMISSIONS.VIEW,
+  ],
+}

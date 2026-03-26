@@ -8,13 +8,23 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { useAuth } from "@/context/AuthContext"
+import { can, PERMISSIONS} from "@/auth"
+import type { Role } from "@/auth"
 
 type Props = {
   collapsed: boolean
   toggleCollapse: () => void
 }
 
+
 export default function Sidebar({ collapsed, toggleCollapse }: Props) {
+
+  // Datos del perfil
+  const { profile} = useAuth()
+  console.log("PROFILE:", profile)
+  console.log("ROLE:", profile?.roleName)
+   
 
   const [openMenu, setOpenMenu] = useState<string | null>(null)
 
@@ -27,11 +37,11 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
       name: "Registros",
       icon: FilePlusCorner,
        children: [
-        { name: "Nueva Sucursal", path: "/dashboard/sucursal" },
-        { name: "Nuevo Personal", path: "/dashboard/personal" },
+        { name: "Nueva Sucursal", path: "/dashboard/sucursal", permission: PERMISSIONS.CREATE_BRANCH},
+        { name: "Nuevo Personal", path: "/dashboard/personal", permission: PERMISSIONS.CREATE_PERSONAL},
         { name: "Transaccion", path: "/dashboard/transaccion"},
         { name: "Depósito", path: "/dashboard/regdeposito"},
-        { name: "Deuda", path: "/dashboard/regdeuda"},
+        { name: "Deuda", path: "/dashboard/regdeuda", permission: PERMISSIONS.CREATE_DEUDA},
         { name: "Vehiculo", path: "/dashboard/vehiculo"},
         { name: "Cliente", path: "/dashboard/cliente"}   
       ]
@@ -149,7 +159,9 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
 
                 <div className="ml-8 mt-1 flex flex-col gap-1">
 
-                  {item.children.map((sub, i) => (
+                  {item.children
+                  .filter(sub => !sub.permission || can(profile?.roleName as Role | undefined, sub.permission))
+                  .map((sub, i) => (
 
                     <Link
                         key={i}

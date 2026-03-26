@@ -15,6 +15,7 @@ import Deuda from "./pages/deuda/Deuda"
 import Memos from "./pages/memos/Memos"
 import { ConfirmProvider } from "./context/ConfirmContext"
 import { ToastProvider } from "./context/ToastContext"
+import { AuthProvider } from "./context/AuthContext"
 
 
 
@@ -41,6 +42,7 @@ function App() {
   }, [])
 
   return (
+    <AuthProvider>
     <ToastProvider>
     <ConfirmProvider>
     <Routes>
@@ -125,6 +127,8 @@ function App() {
     </Routes>
     </ConfirmProvider>
     </ToastProvider>
+    </AuthProvider>
+
   )
 }
 

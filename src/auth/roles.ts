@@ -1,0 +1,9 @@
+export const ROLES = {
+  ADMIN: "ADMIN",
+  GERENTE: "GERENTE",
+  JEFE_PERSONAL: "JEFE_PERSONAL",
+  ASESOR_FINANCIERO: "ASESOR_FINANCIERO",
+  ASESOR_VENTAS: "ASESOR_VENTAS",
+} as const
+
+export type Role = (typeof ROLES)[keyof typeof ROLES]

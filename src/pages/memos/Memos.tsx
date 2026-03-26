@@ -55,23 +55,22 @@ export default function Memos() {
   
   const handleExport = () => {
   const header = {
-    title: "Reporte de Depósitos",
-    subtitle: "Sistema Financiero",
+    title: "MEMORÁNDUM",
+    subtitle: "(Comprobante de ingreso)",
     date: new Date().toLocaleDateString(),
     logo: logo64 
   }
 
-  const table = {
-    head: ["Banco", "Titular", "Monto", "Detalle"],
-    body: transaction.map(item => [
-  item.id_cuenta?.banco,
-  item.id_cuenta?.titular,
-  item.amount,
-  item.detail
-])  
+  const datos ={
+    fecha: "25/03/2026",
+    sucursal: "Sucursal Central",
+    nombre: "Juan Pérez",
+    cargo: "Cajero",
+    motivo: "Incumplimiento de horario laboral.",
+    gerente: "Lic. Carlos Gómez"
   }
 
-  const doc = generatePDF(header, table)
+  const doc = generatePDF(header, datos)
   doc.output("dataurlnewwindow") 
 }
   useEffect(() => {
@@ -124,7 +123,7 @@ export default function Memos() {
   const fetchPersonal = async () => {
     const { data, error } = await supabase
       .from("team")
-      .select("ci, name, id_branch") // 🔹 IMPORTANTE
+      .select("ci, name, id_branch,0") // 🔹 IMPORTANTE
       .order("name")
 
     if (error) console.error(error)
@@ -336,7 +335,7 @@ export default function Memos() {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl italic font-bold">
-          COBRO MEMORANDUMS Y SANCIONES
+          MEMORANDUMS Y SANCIONES
         </h2>
 
         <div className="flex gap-3">
