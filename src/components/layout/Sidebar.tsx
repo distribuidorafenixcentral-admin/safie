@@ -39,27 +39,27 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
        children: [
         { name: "Nueva Sucursal", path: "/dashboard/sucursal", permission: PERMISSIONS.CREATE_BRANCH},
         { name: "Nuevo Personal", path: "/dashboard/personal", permission: PERMISSIONS.CREATE_PERSONAL},
-        { name: "Transaccion", path: "/dashboard/transaccion"},
-        { name: "Depósito", path: "/dashboard/regdeposito"},
-        { name: "Deuda", path: "/dashboard/regdeuda", permission: PERMISSIONS.CREATE_DEUDA},
-        { name: "Vehiculo", path: "/dashboard/vehiculo"},
-        { name: "Cliente", path: "/dashboard/cliente"}   
+        { name: "Transaccion", path: "/dashboard/transaccion", permission: PERMISSIONS.CREATE_REGTRANSACTION},
+        { name: "Depósito", path: "/dashboard/regdeposito", permission: PERMISSIONS.CREATE_REGDEPOSIT},
+        { name: "Deuda", path: "/dashboard/regdeuda", permission: PERMISSIONS.CREATE_DEBT},
+        { name: "Vehiculo", path: "/dashboard/vehiculo", permission: PERMISSIONS.CREATE_CAR},
+        { name: "Cliente", path: "/dashboard/cliente", permission: PERMISSIONS.CREATE_CUSTOMER},   
       ]
     },
     {
       name: "T. Ingresos",
       icon: ArrowLeftRight,
       children: [
-        { name: "Deposito", path: "/dashboard/deposito" },
-        { name: "Cobro Deuda", path: "/dashboard/deuda"},
-        { name: "Memos / sanciones", path: "/dashboard/memos"}
+        { name: "Deposito", path: "/dashboard/deposito", permission: PERMISSIONS.DEPOSITS},
+        { name: "Cobro Deuda", path: "/dashboard/deuda", permission: PERMISSIONS.COLLECT_DEBT},
+        { name: "Memos / sanciones", path: "/dashboard/memos", permission: PERMISSIONS.MEMORANDUM}
       ]
-    },
+    ,},
       {
       name: "T. Egresos",
       icon: ArrowLeftRight,
       children: [  
-        { name: "Pago Comisiones", path: "/comisiones" },
+        { name: "Pago Comisiones", path: "/comisiones", permission: PERMISSIONS.CREATE_PERSONAL },
         { name: "Pago Sueldos", path: "/sueldos" },
         { name: "Pago Servicios", path: "/servicios" },
         { name: "Pago Alquileres", path: "/alquileres"},
