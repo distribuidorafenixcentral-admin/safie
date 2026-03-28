@@ -11,6 +11,8 @@ import Deposito from "./pages/deposito/Deposito"
 import Regdeuda from "./pages/regdeuda/RegDeuda"
 import Deuda from "./pages/deuda/Deuda"
 import Memos from "./pages/memos/Memos"
+import Sueldos from "./pages/sueldos/Sueldos"
+import Comisiones from "./pages/comision/Comision"
 import { ConfirmProvider } from "./context/ConfirmContext"
 import { ToastProvider } from "./context/ToastContext"
 import { AuthProvider, useAuth } from "./context/AuthContext"
@@ -52,6 +54,10 @@ function AppRoutes() {
         <Route path="deposito" element={<Deposito />} />
         <Route path="deuda" element={<Deuda />} />
         <Route path="memos" element={<Memos />} />
+        <Route path="comisiones" element={<Comisiones />} />
+        <Route path="sueldos" element={<Sueldos />} />
+
+
       </Route>
 
       {/* fallback */}

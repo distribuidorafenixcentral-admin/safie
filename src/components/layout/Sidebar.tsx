@@ -56,21 +56,21 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
       name: "T. Egresos",
       icon: ArrowLeftRight,
       children: [  
-        { name: "Pago Comisiones", path: "/comisiones", permission: PERMISSIONS.CREATE_PERSONAL },
-        { name: "Pago Sueldos", path: "/sueldos" },
-        { name: "Pago Servicios", path: "/servicios" },
-        { name: "Pago Alquileres", path: "/alquileres"},
-        { name: "Material de escritorio", path: "/matescritorio"},
-        { name: "Material de limpieza", path: "/matlimpieza"},
-        { name: "Compras varias", path: "/varios"},
-        { name: "Devoluciones", path: "/devoluciones"}
+        { name: "Pago Comisiones", path: "/dashboard/comisiones", permission: PERMISSIONS.PAGO_COMISION },
+        { name: "Pago Sueldos", path: "/dashboard/sueldos", permission: PERMISSIONS.PAGO_SUELDO},
+        { name: "Pago Servicios", path: "/dashboard/servicios", permission: PERMISSIONS.PAGO_SERVICIOS },
+        { name: "Pago Alquileres", path: "/dashboard/alquileres", permission: PERMISSIONS.PAGO_ALQUILER},
+        { name: "Material de escritorio", path: "/dashboard/matescritorio", permission: PERMISSIONS.PAGO_MATESCRITORIO},
+        { name: "Material de limpieza", path: "/dashboard/matlimpieza", permission: PERMISSIONS.PAGO_MATLIMPIEZA},
+        { name: "Compras varias", path: "/dashboard/varios", permission: PERMISSIONS.PAGO_COMPRAS},
+        { name: "Devoluciones", path: "/dashboard/devoluciones", permission: PERMISSIONS.DEVOLUCIONES},
       ]
     },
     {
       name: "Reportes",
       icon: FileText,
       children: [
-        { name: "Cierre diario", path: "/cierre" },
+        { name: "Cierre diario", path: "/cierre", permission: PERMISSIONS.CREATE_BRANCH },
         { name: "Sucursales", path: "/repsucursales" },
         { name: "Personal", path: "/reopersonal" },
         { name: "Movimiento General", path: "/repmovgeneral"},
