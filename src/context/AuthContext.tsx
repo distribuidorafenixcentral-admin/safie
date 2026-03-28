@@ -13,6 +13,7 @@ type Profile = {
     code: Role
   } | null
   roleName: Role | null
+  user: string
 }
 
 type AuthContextType = {
@@ -70,14 +71,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await supabase
         .from("team")
         .select(`
-          ci,
-          name,
-          user_id,
-          id_role,
+          *,
           role (
             role,
             code
-          )
+          ),
+          branches ( name_branch)
         `)
         .eq("user_id", user.id)
         .single()

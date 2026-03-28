@@ -1,3 +1,5 @@
+
+
 import jsPDF from "jspdf"
 
 // Encabezado
@@ -6,6 +8,7 @@ type HeaderData = {
   subtitle?: string
   date?: string
   logo?: string
+  user?: string
 }
 
 // 📌 Datos del memorándum
@@ -14,13 +17,24 @@ type MemoData = {
   sucursal: string
   nombre: string
   cargo: string
-  motivo: string
-  gerente: string
+  motivo: string 
+  banco: string
+  tpago: string
+  cta: string
+  titular: string
+  monto: number  
+}
+
+// 📌 Datos del usuarios
+type UserData = {
+  usuario: string 
+  cargo_user:string
 }
 
 export const generatePDF = (
   header: HeaderData,
-  data: MemoData
+  data: MemoData,
+  userdata: UserData, 
 ) => {
   const doc = new jsPDF()
 
@@ -30,7 +44,7 @@ export const generatePDF = (
   }
 
   // 📌 TITULO
-  doc.setFont("helvetica", "normal")
+  doc.setFont("helvetica", "bold")
   doc.setFontSize(18)
   doc.text(header.title, 105, 20, { align: "center" })
 
@@ -42,10 +56,17 @@ export const generatePDF = (
   }
 
   // 📌 FECHA
+  if (header.user) {   
+    doc.setFontSize(8)
+    doc.text(`User: ${header.user}`, 165, 29)
+  }
+
+   // 📌 USUARIO
   if (header.date) {
-    doc.setFontSize(10)
+    doc.setFontSize(8)
     doc.text(`Date: ${header.date}`, 165, 33)
   }
+
 
   // 📌 LINEA
   doc.line(10, 36, 200, 36)
@@ -61,41 +82,55 @@ export const generatePDF = (
 
   // 📌 DATOS
   doc.setFontSize(11)
-  doc.text("DATOS DEL PERSONAL:", 10, y)
+  doc.setFont("helvetica", "bold")
+  doc.text("DATOS DE LA SANCIÓN", 10, y)
+  doc.text("FORMA DE PAGO", 90, y)
 
   y += 8
-  doc.setFont("helvetica", "bold")
-
+  
   doc.text("Fecha:", 10, y)
-  doc.text(data.fecha, 50, y)
+  doc.text("T. Pago", 90, y)
+  doc.setFont("helvetica", "normal")
+  doc.text(data.fecha, 30, y)
+  doc.text(data.tpago, 130, y)
 
   y += 6
+  doc.setFont("helvetica", "bold")
   doc.text("Sucursal:", 10, y)
-  doc.text(data.sucursal, 50, y)
+  doc.text("Banco", 90, y)
+  doc.setFont("helvetica", "normal")
+  doc.text(data.sucursal, 30, y)
+  doc.text(data.banco, 130, y)
 
   y += 6
+  doc.setFont("helvetica", "bold")
   doc.text("Nombre:", 10, y)
-  doc.text(data.nombre, 50, y)
+  doc.text("N° Cuenta / Titular:", 90, y)
+  doc.setFont("helvetica", "normal")
+  doc.text(data.nombre, 30, y)
+  doc.text(`${String(data.cta)}   -   ${data.titular}`, 130, y)
 
   y += 6
+  doc.setFont("helvetica", "bold")
   doc.text("Cargo:", 10, y)
-  doc.text(data.cargo, 50, y)
+  doc.text("Monto:", 90, y)
+  doc.setFont("helvetica", "normal")
+  doc.text(data.cargo, 30, y)
+  doc.text(`Bs. ${data.monto.toLocaleString("es-BO")}`, 130, y)
 
   // 📌 SEPARADOR
   y += 5
   doc.line(10, y, 200, y)
 
   // 📌 ASUNTO
-  y += 10
-
-  doc.setFont("helvetica", "bold")
-  doc.text("ASUNTO:", 10, y)
-
   y += 8
 
   doc.setFont("helvetica", "normal")
 
-  const texto = `Por medio del presente, se comunica lo siguiente:
+  const texto = `Reciba usted un cordial saludo.
+
+Sirva el presente para comunicarle de manera oficial que, tras el análisis de las actividades recientes, se ha procedido a la entrega de este memorándum de incidencia.
+La naturaleza de esta comunicación responde al motivo detallado a continuación y busca asegurar el cumplimiento de los estándares de la institución:
 
 ${data.motivo}
 
@@ -109,14 +144,15 @@ Sin otrp articular, me despido atentamente.`
   // 📌 FIRMA
   y += textLines.length * 6 + 25
 
-  doc.line(60, y, 140, y)
+  doc.line(70, y, 140, y)
 
   y += 6
   doc.setFontSize(10)
-  doc.text(data.gerente, 105, y, { align: "center" })
+  doc.text(userdata.usuario, 105, y, { align: "center" })
 
   y += 5
-  doc.text("GERENTE", 105, y, { align: "center" })
+  doc.setFont("helvetica", "bold")
+  doc.text(userdata.cargo_user, 105, y, { align: "center" })
 
   // =====================================
   // 📌 FOOTER
@@ -127,6 +163,7 @@ Sin otrp articular, me despido atentamente.`
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i)
     doc.setFontSize(9)
+      doc.setFont("helvetica", "normal")
     doc.text(`Página ${i} de ${pageCount}`, 180, 290)
   }
 

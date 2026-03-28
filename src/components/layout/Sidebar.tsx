@@ -22,9 +22,6 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
 
   // Datos del perfil
   const { profile} = useAuth()
-  console.log("PROFILE:", profile)
-  console.log("ROLE:", profile?.roleName)
-   
 
   const [openMenu, setOpenMenu] = useState<string | null>(null)
 

@@ -5,11 +5,13 @@ import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 import { logo64 } from "@/utils/pdf/logo64"
+import { useAuth } from "@/context/AuthContext"
 
 import { Plus, FileText, FileSpreadsheet } from "lucide-react"
 import { generatePDF } from "@/utils/pdf/templates/pdfTemplates"
 
-// 🔹 REGLAS TIPO DE PAGO
+
+// REGLAS TIPO DE PAGO
 const TYPE_PAY_RULES: Record<number, { requireBank: boolean }> = {
   1: { requireBank: false }, // EFECTIVO
   2: { requireBank: true },
@@ -18,6 +20,15 @@ const TYPE_PAY_RULES: Record<number, { requireBank: boolean }> = {
 }
 
 export default function Memos() {
+  // Recuperar datos de la session
+  
+  const { user, profile} = useAuth()
+
+  useEffect(() => {
+  console.log("🔥 Memos mounted")
+  console.log("USER:", user)
+  console.log("PROFILE:", profile)
+}, [user, profile])
 
   const [personal, setPersonal] = useState<any[]>([])
   const [cuentas, setCuentas] = useState<any[]>([])
@@ -30,6 +41,8 @@ export default function Memos() {
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
   const [mode, setMode] = useState<"create" | "view" | "edit">("create")
   const [selected, setSelected] = useState<any>(null)
+
+  
 
   const [form, setForm] = useState({
     id_type_transaction: "",
@@ -50,28 +63,45 @@ export default function Memos() {
     form.id_branch ? p.id_branch == form.id_branch : true
   )
 
+  //Imprimir el documento para firma  
+const handleExport = (row: any) => {
 
-  //Imprimir el documento para firma
-  
-  const handleExport = () => {
+  if (!row) {
+    console.error("No hay datos para exportar")
+    return
+  }
+
   const header = {
     title: "MEMORÁNDUM",
-    subtitle: "(Comprobante de ingreso)",
+    subtitle: "(Comprobante de ingreso)",    
     date: new Date().toLocaleDateString(),
-    logo: logo64 
+    logo: logo64,
+    user: profile?.user || "N/A"
   }
 
-  const datos ={
-    fecha: "25/03/2026",
-    sucursal: "Sucursal Central",
-    nombre: "Juan Pérez",
-    cargo: "Cajero",
-    motivo: "Incumplimiento de horario laboral.",
-    gerente: "Lic. Carlos Gómez"
+  const userdata = {
+    usuario: profile?.name || "N/A",
+    cargo_user: profile?.roleName || "N/A"
   }
 
-  const doc = generatePDF(header, datos)
-  doc.output("dataurlnewwindow") 
+  const datos = {
+
+    fecha: row.created_at
+      ? new Date(row.created_at).toLocaleDateString("es-BO")
+      : "",
+    sucursal: row.id_branch?.name_branch || "-",
+    nombre: row.id_team?.name || "-",
+    cargo: row.id_team?.role?.role || "-",
+    motivo: row.detail || "-",
+    tpago: row.id_type_pay?.type_p || "-",
+    banco: row.id_cuenta?.banco || "   -",
+    cta: row.id_cuenta?.numero_cta || "",
+    titular: row.id_cuenta?.titular || "",
+    monto: Number(row.amount) || 0
+  }
+
+  const doc = generatePDF(header, datos, userdata)
+  doc.output("dataurlnewwindow")
 }
   useEffect(() => {
     fetchTransaction()
@@ -96,7 +126,7 @@ export default function Memos() {
     return () => window.removeEventListener("keydown", handleEsc)
   }, [])
 
-  // ================= FETCH =================
+  //  FETCH 
 
   const fetchTransaction = async () => {
     const { data, error } = await supabase
@@ -105,10 +135,11 @@ export default function Memos() {
         id,
         id_type_transaction (id, description),
         id_branch (id, name_branch),
-        id_team (ci, name),
+        id_team (ci, name, role (role)),
         id_type_pay (id, type_p),
         amount,
         detail,
+        created_at,
         id_cuenta (id, banco, titular, numero_cta),
         id_status (id, status)
       `)
@@ -123,7 +154,7 @@ export default function Memos() {
   const fetchPersonal = async () => {
     const { data, error } = await supabase
       .from("team")
-      .select("ci, name, id_branch,0") // 🔹 IMPORTANTE
+      .select("ci, name, id_branch")
       .order("name")
 
     if (error) console.error(error)
@@ -254,8 +285,7 @@ export default function Memos() {
       setMessageType("")
     }, 1500)
 
-    fetchTransaction()
-    handleExport()
+    fetchTransaction()    
   }
 
   // 

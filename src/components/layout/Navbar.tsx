@@ -36,6 +36,7 @@ export default function Navbar() {
         .from("team")
         .select(`
           name,
+          user,
           id_role (role ), 
           id_branch ( name_branch )
         `)
@@ -84,7 +85,7 @@ export default function Navbar() {
         {/* Usuario */}
         <div className="text-right leading-tight">
           <p className="text-sm font-semibold">
-            {userData?.name || "Cargando..."}
+            {userData?.user || "Cargando..."}
           </p>
 
           <p className="text-xs text-gray-500">
