@@ -8,7 +8,7 @@ import {
 
 import { Trash, DollarSign } from "lucide-react"
 
-type Deposito = {
+type PagoDeposito = {
   id: number
   created_at: string
 
@@ -27,19 +27,19 @@ type Deposito = {
   detail: string
 }
 
-const columnHelper = createColumnHelper<Deposito>()
+const columnHelper = createColumnHelper<PagoDeposito>()
 
 export default function ComisionTable({
   data,  
   onEdit,
   onDelete
 }: {
-  data: Deposito[]  
-  onEdit: (row: Deposito) => void
-  onDelete: (row: Deposito) => void
+  data: PagoDeposito[]  
+  onEdit: (row: PagoDeposito) => void
+  onDelete: (row: PagoDeposito) => void
 }) {
 
-  // columns deben estar dentro del componente
+  // Columnas por mostrar en la tabla
   const columns = [
 
     columnHelper.accessor("id", {
@@ -59,35 +59,17 @@ export default function ComisionTable({
     columnHelper.accessor((row) => row.id_type_sale?.atype, {
       id: "tventa",
       header: "Venta",
-    }),
-
-    columnHelper.accessor((row) => row.id_type_pay?.type_p, {
-      id: "tpago",
-      header: "Pago",
-    }),
-
-    columnHelper.accessor((row) => row.id_customer?.name, {
-      id: "cliente",
-      header: "Cliente",
-    }),
-
-    columnHelper.accessor((row) => row.id_car?.name, {
-      id: "Vehiculo",
-      header: "Vehiculo",
-    }),
-
-    columnHelper.accessor((row) => row.id_car?.cost, {
-      id: "amount",
-      header: "Costo"
-    }),
+    }),  
 
     columnHelper.accessor("c_inicial", {
       header: "Inicial",
     }),
 
-    columnHelper.accessor("detail", {
-      header: "Detalle",
-    }),
+    columnHelper.accessor((row) => row.id_customer?.name, {
+      id: "cliente",
+      header: "Cliente",
+    }),  
+
 
     columnHelper.display({
       id: "acciones",

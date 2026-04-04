@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import ComisionTable from "./ComisionTable"
-
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
@@ -313,7 +312,7 @@ export default function Comision() {
   // Filtro asesor, sucursal, detalle, tipo de venta, tipo de pago, cliente
   const filtered = transaction.filter((p) =>
     `${p.id_team?.name || ""} ${p.id_branch?.name_branch || ""} ${p.id_customer?.name || ""} 
-      ${p.detail || ""} ${p.id_type_sale?.atype || ""} ${p.id_type_pay?.type_p || ""} ${p.amount} ${p.c_inicial}`
+     ${p.id_type_sale?.atype || ""} ${p.amount} ${p.c_inicial}`
       .toLowerCase()
       .includes(search.toLowerCase())
   )
@@ -387,7 +386,7 @@ export default function Comision() {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-2xl text-blue-800 font-bold italic">
-         DEPÓSITOS
+         PAGO DE COMISIONES
         </h2>
 
         <div className="flex gap-3">    
