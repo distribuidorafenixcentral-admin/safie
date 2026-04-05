@@ -4,7 +4,6 @@ import MemosTable from "./MemosTable"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-import { logo64 } from "@/utils/pdf/logo64"
 import { useAuth } from "@/context/AuthContext"
 
 import { Plus, FileText, FileSpreadsheet } from "lucide-react"
@@ -75,7 +74,6 @@ const handleExport = (row: any) => {
     title: "MEMORÁNDUM",
     subtitle: "(Comprobante de ingreso)",    
     date: new Date().toLocaleDateString(),
-    logo: logo64,
     user: profile?.user || "N/A"
   }
 

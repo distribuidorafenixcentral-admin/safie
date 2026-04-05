@@ -153,7 +153,7 @@ export default function MemosTable({
 
               {row.getVisibleCells().map((cell) => (
 
-                <td key={cell.id} className="p-3">
+                <td key={cell.id} className="p-3 m-6">
 
                   {flexRender(
                     cell.column.columnDef.cell,
