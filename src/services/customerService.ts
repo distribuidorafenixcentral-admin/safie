@@ -32,7 +32,7 @@ export const checkDuplicateCustomer = async (ci: string) => {
   return data && data.length > 0
 }
 
-// 📌 Actualizar Cliente => unicamente se podra actualizar la dirección
+// 📌 Actualizar Cliente => no se podra actualizar el numero de carnet, para ello se deberan poner en contacto con soporte tecnico
 export const updateCustomer = async (id: number, data: Partial<Customer>) => {
   const { error } = await supabase
     .from("customers")
