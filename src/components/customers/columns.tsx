@@ -4,7 +4,7 @@ import {  Pencil, Trash2 } from "lucide-react"
 
 const columnHelper = createColumnHelper<Customer>()
 
-export const getColumns = (onEdit: any, onDelete: any) => [
+export const getColumnsCustomers = (onEdit: any, onDelete: any) => [
 
   columnHelper.display ({
     id: "index",

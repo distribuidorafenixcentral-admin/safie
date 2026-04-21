@@ -3,7 +3,7 @@ import { useCustomers } from "@/hooks/useCustomers"
 import { useForm } from "@/hooks/useForm"
 
 import { DataTable } from "@/components/common/DataTable"
-import { getColumns } from "@/components/sucursal/columns"
+import { getColumnsCustomers } from "@/components/customers/columns"
 
 import { useConfirm } from "@/context/ConfirmContext"
 import { useToast } from "@/context/ToastContext"
@@ -165,7 +165,7 @@ const handlePDF = () => {
   exportCustomersToPDF(filteredCustomers, currentUser)
 }
 
-  const columns = getColumns(handleEdit, handleDelete)
+  const columns = getColumnsCustomers(handleEdit, handleDelete)
 
   return (
     <div>
