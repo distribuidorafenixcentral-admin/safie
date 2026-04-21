@@ -58,7 +58,7 @@ export default function Customer() {
       name: "",
       celphone: "",
       ciudad: "",
-      reference: "",
+      reference: ""
     }
   })
 
@@ -79,8 +79,13 @@ export default function Customer() {
       if (mode === "create") {
         const result = await checkDuplicateCustomer(form.ci)
 
-        if (result) {
+        if (result.exists) {
           setMessage("El cliente ya existe")
+          setMessageType("error")
+          return
+        }
+        if (result.inactive) {
+          setMessage("El cliente ya existe pero esta en estado inactivo. Contacte a soporte técnico")
           setMessageType("error")
           return
         }

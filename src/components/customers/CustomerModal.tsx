@@ -76,8 +76,7 @@ export default function CustomerModal(props: Props) {
               disabled={props.mode !== "create"}
               className="border p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-600 pl-2 italic 
               disabled:font-bold disabled:bg-gray-200 disabled:text-gray-700 disabled:cursor-not-allowed"
-              placeholder="Ej: Casa Matriz"
-              autoFocus={props.mode === "create"} 
+              placeholder="Jaime Pérez"          
             />
           </div>
 
@@ -105,8 +104,7 @@ export default function CustomerModal(props: Props) {
               value={props.form.reference}
               onChange={props.onChange}
               className="border p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-400 pl-2"
-              placeholder="00000000"
-              autoFocus={props.mode === "edit"}              
+              placeholder="00000000"                         
             />
           </div>
           {/* Departamento */}

@@ -24,12 +24,23 @@ export const createCustomer = async (customer: Partial<Customer>) => {
 
 // 📌 Validar duplicados en ci
 export const checkDuplicateCustomer = async (ci: string) => {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("customers")
-    .select("id")
+    .select("id, status")
     .eq("ci", ci)
 
-  return data && data.length > 0
+    if (error) throw error
+
+    if (!data || data.length === 0) {
+      return { exists: false, inactive: false }
+    }
+
+    const customer = data[0]
+
+    return {
+      exists: customer.status !== 2,
+      inactive: customer.status === 2
+    }
 }
 
 // 📌 Actualizar Cliente => no se podra actualizar el numero de carnet, para ello se deberan poner en contacto con soporte tecnico
