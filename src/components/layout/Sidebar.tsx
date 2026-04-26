@@ -4,7 +4,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  FilePlusCorner
+  FilePlusCorner,
+  PhoneCallIcon
 } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
@@ -36,11 +37,17 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
        children: [
         { name: "Nueva Sucursal", path: "/dashboard/sucursal", permission: PERMISSIONS.CREATE_BRANCH},
         { name: "Nuevo Personal", path: "/dashboard/personal", permission: PERMISSIONS.CREATE_PERSONAL},
-        { name: "Transaccion", path: "/dashboard/transaccion", permission: PERMISSIONS.CREATE_REGTRANSACTION},
-        { name: "Depósito", path: "/dashboard/regdeposito", permission: PERMISSIONS.CREATE_REGDEPOSIT},
-        { name: "Deuda", path: "/dashboard/regdeuda", permission: PERMISSIONS.CREATE_DEBT},
         { name: "Vehiculo", path: "/dashboard/vehiculo", permission: PERMISSIONS.CREATE_CAR},
         { name: "Cliente", path: "/dashboard/cliente", permission: PERMISSIONS.CREATE_CUSTOMER},   
+      ]
+    },
+    {
+      name: "Solicitudes",
+      icon: PhoneCallIcon,
+      children: [
+        { name: "Pago Servicios", path: "/dashboard/transaccion", permission: PERMISSIONS.CREATE_REGTRANSACTION},
+        { name: "Depósito", path: "/dashboard/regdeposito", permission: PERMISSIONS.CREATE_REGDEPOSIT},
+        { name: "Deuda", path: "/dashboard/regdeuda", permission: PERMISSIONS.CREATE_DEBT},
       ]
     },
     {
