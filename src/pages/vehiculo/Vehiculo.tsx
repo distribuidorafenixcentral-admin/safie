@@ -1,384 +1,250 @@
-import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
-import * as XLSX from "xlsx"
-import jsPDF from "jspdf"
-import autoTable from "jspdf-autotable"
-import {Plus, FileText, FileSpreadsheet } from "lucide-react"
-import VehiculoTable from "./VehiculoTable"
+import { useState, useEffect } from "react"
+import { useVehiculos } from "@/hooks/useVehiculos"
+import { useForm } from "@/hooks/useForm"
+
+import {
+  createVehiculo,
+  updateVehiculo,
+  deleteVehiculo,
+  checkDuplicateVehiculo
+} from "@/services/vehiculoService"
+
+import { DataTable } from "@/components/common/DataTable"
+import VehiculoModal from "@/components/vehiculos/VehiculosModal"
+import { getColumns } from "@/components/vehiculos/columns"
+
 import { useConfirm } from "@/context/ConfirmContext"
-import { useToast} from "@/context/ToastContext"
+import { useToast } from "@/context/ToastContext"
+
+import { Plus, FileText, FileSpreadsheet } from "lucide-react"
+import { exportVehiculosToExcel } from "@/utils/export/excel/vehiculoExport"
+import { exportVehiculosToPDF } from "@/utils/export/pdf/vehiculoExportpdf"
+
+
+import type { Vehiculo } from "@/types/vehiculo"
+import { useAuth } from "@/context/AuthContext"
+
 
 export default function Vehiculo() {
 
-
-  const [vehiculo, setVehiculo] = useState<any[]>([])
+  // 🔍 búsqueda
   const [search, setSearch] = useState("")
-  const [openModal, setOpenModal] = useState(false)
+  const { filteredVehiculos } = useVehiculos(search)
+
+  // 🔹 UI
+  const [open, setOpen] = useState(false)
+  const [mode, setMode] = useState<"create" | "edit">("create")
+  const [selected, setSelected] = useState<Vehiculo | null>(null)
+
+  // 🔹 mensajes
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
-  const [mode, setMode] = useState<"create" | "view" | "edit">("create")
-  const [selected, setSelected] = useState<any>(null)
+
+    useEffect(() => {
+    if (!message) return
+
+    const timer = setTimeout(() => {
+      setMessage("")
+      setMessageType("")
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [message])
+
   const confirm = useConfirm()
   const showToast = useToast()
 
-  const [form, setForm] = useState({
-    id_marca: "",
-    name: "",
-    modelo:"",
-    cost:""
+  // 🔹 form
+  const {
+    form,
+    handleChange,
+    resetForm,
+    setValues
+  } = useForm({
+    initialValues: {
+      marca: "",
+      name: "",
+      modelo: "",
+      cost: ""
+    }
   })
 
-  useEffect(() => {
-      fetchVehiculo()
-  }, [])
+  // 📌 Recuperamos datos de la sesion
+  const { profile, user} = useAuth()
 
-    // mensajes automáticos
-    useEffect(() => {
-      if (message) {
-        const timer = setTimeout(() => {
-          setMessage("")
-        }, 2000)
-        return () => clearTimeout(timer)
-      }
-    }, [message])
-  
-    // cerrar modal con ESC
-    useEffect(() => {
-      const handleEsc = (e: KeyboardEvent) => {
-        if (e.key === "Escape") {
-          setOpenModal(false)
-        }
-      }
-  
-      window.addEventListener("keydown", handleEsc)
-  
-      return () => {
-        window.removeEventListener("keydown", handleEsc)
-      }
-    }, [])
+  // 📌 SUBMIT (SIN fetch → realtime)
+  const handleSubmit = async () => {
 
-    
-    // Recuperamos los datos de la tabla Vehiculos
-    const fetchVehiculo = async () => {
-      const { data, error } = await supabase
-      .from("cars")
-      .select(`
-        id,
-        id_marca,
-        name,
-        cost,
-        modelo,
-        status
-      `)
-      .neq("status", 2)
-      .order("id", { ascending: true})     
-  
-    
-      //muestra el error en caso que sea BD
-      if(error) console.error(error)
-        setVehiculo(data || [])
+    if (!form.marca || !form.name || !form.modelo || !form.cost) {
+      setMessage("Todos los campos son obligatorios")
+      setMessageType("error")
+      return
     }
 
-   // Actualiza el formulario deforma dinamica
-  const handleChange = (e:any) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    })
-  }
+    try {
 
-    // Resetea el formulario 
-  const resetForm = () => {
-    setForm({
-      id_marca: "",
-      name: "",
-      cost: "",
-      modelo: ""
-    })
-  }
-
-  // ENVIA LOS DATOS PARA GUARDAR EL REGISTRO
-    const handleSubmit = async () => {
-  
-      // VALIDACIÓN DE CAMPOS VACIOS
-      if (
-        !form.id_marca ||
-        !form.name ||
-        !form.cost ||
-        !form.modelo 
-      ) {
-        setMessage("Todos los campos son obligatorios")
-        setMessageType("error")
-        return
-      }
-  
-      // CREATE
       if (mode === "create") {
-        const { error } = await supabase
-          .from("cars")
-          .insert({
-            id_marca: form.id_marca,
-            name: form.name,
-            cost: form.cost,
-            modelo: form.modelo,            
-            status: 1
-          })
-  
-        if (error) {
-          setMessage("Error al guardar")
+        const result = await checkDuplicateVehiculo(form.name, form.modelo)
+
+        if (result.exists) {
+          setMessage("El vehiculo ya existe")
           setMessageType("error")
           return
         }
-        setMessage("Registro guardado correctamente")
+        if (result.inactive) {
+          setMessage("El vehiculo ya existe pero esta en estado inactivo. Contacte a soporte técnico")
+          setMessageType("error")
+          return
+        }
+
+        await createVehiculo({
+          ...form,
+          cost: Number(form.cost)
+        })
+        setMessage("Guardado correctamente")
       }
-  
-      // UPDATE
+
       if (mode === "edit" && selected) {
-        const { error } = await supabase
-          .from("cars")
-          .update({
-            id_marca: form.id_marca,
-            name: form.name,
-            cost: form.cost,
-            modelo: form.modelo, 
-          })
-          .eq("id", selected.id)
-  
-        if (error) {
-          setMessage("Error al actualizar")
-          setMessageType("error")
-          return
-        }
-  
-        setMessage("Registro actualizado correctamente")
+        await updateVehiculo(selected.id, {
+          marca: form.marca,
+          name: form.name,
+          modelo: form.modelo,
+          cost: Number(form.cost)
+        })
+        setMessage("Actualizado correctamente")
       }
+
       setMessageType("success")
-  
+
+      // 🔥 SIN fetch → realtime actualiza
+
       setTimeout(() => {
-        setOpenModal(false)
+        setOpen(false)
         resetForm()
         setSelected(null)
         setMode("create")
         setMessage("")
-        setMessageType("")
-      }, 1500)
-  
-      fetchVehiculo()
+      }, 1200)
+
+    } catch {
+      setMessage("Error en proceso")
+      setMessageType("error")
     }
+  }
 
-      //Editar el registro
-      const handleEdit = (row:any) => {
-        setSelected(row)
-        setMode("edit")
-        setForm({           
-          id_marca: row.id_marca || "",
-          name: row.name || "",
-          cost: row.cost || "",
-          modelo: row.modelo
-        })
-        setOpenModal(true)
-      }
-    
-      // Eliminar el registro => cambia el status a 2
-      const handleDelete = (row:any) => {
-        confirm({
-          title: "Eliminar registro",
-          message: "¿Seguro que deseas eliminar este registro?",
-          confirmText: "Eliminar",
-          onConfirm: async () => {
-            const { error } = await supabase
-              .from("cars")
-              .update({ status: 2 })
-              .eq("id", row.id)
+  // 📌 EDIT
+  const handleEdit = (row: Vehiculo) => {
+    setSelected(row)
+    setMode("edit")
+    setValues({ ...row, cost: String(row.cost) })
+    setOpen(true)
+  }
 
-            if (error) {
-              showToast("Error al eliminar", "error")
-            } else {
-              showToast("Proceso concluido con éxito ✅", "success")
-              fetchVehiculo()
-            }
-          }
-        })
-      }
+  // 📌 DELETE con confirm + toast (
+  const handleDelete = (row: Vehiculo) => {
 
-        // Filtro del buscador nombre del vehiculo
-      const filtered = vehiculo.filter((p) =>
-        p.name?.toLowerCase().includes(search.toLowerCase())       
-      )
-    
-      // EXPORTAR EXCEL
-      const exportToExcel = () => {
-        if (filtered.length === 0) {
-          setMessage("No hay datos para exportar")
-          setMessageType("error")
-          return
+    confirm({
+      title: "Eliminar",
+      message: "¿Seguro que deseas eliminar este registro?",
+      confirmText: "Eliminar",
+
+      onConfirm: async () => {
+        try {
+          await deleteVehiculo(row.id)
+
+          showToast("Proceso concluido con éxito ✅", "success")
+
+          // 🔥 SIN fetch → realtime
+
+        } catch {
+          showToast("Error al eliminar", "error")
         }
-    
-        // formatear datos
-        const dataExport = filtered.map((p) => ({
-          ID: p.id,
-          MARCA: p.id_marca,
-          NOMBRE: p.name,
-          MODELO: p.modelo,
-          COSTO: p.cost         
-        }))
-    
-        const worksheet = XLSX.utils.json_to_sheet(dataExport)
-        const workbook = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Vehiculos")
-        XLSX.writeFile(workbook, "ListaVehiculos.xlsx")
       }
-    
-      // exportar PDF
-      const exportToPDF = () => {
-    
-        if (filtered.length === 0) {
-          setMessage("No hay datos para exportar")
-          setMessageType("error")
-          return
-        }
-    
-        const doc = new jsPDF()
-    
-        // Título
-        doc.text("Reporte de Vehiculos", 14, 10)
-    
-        // Columnas
-        const tableColumn = [
-          "ID",
-          "MARCA",
-          "VEHICULO",
-          "MODELO",
-          "COSTO"
-        ]
-    
-        // Filas
-        const tableRows = filtered.map((p) => ([
-          p.id,
-          p.id_marca,
-          p.name,
-          p.modelo,
-          p.cost   
-        ]))
-    
-        autoTable(doc, {
-          head: [tableColumn],
-          body: tableRows,
-          startY: 20
-        })
-        doc.save("ListaVehiculos.pdf")
-      }
-      
-     
+    })
+  }
+
+  // 📌 Exportar a Excel => reporte general del lo filtrado en la tabla que se muestra
+  const handleExcel = () => {
+    exportVehiculosToExcel(filteredVehiculos)
+  } 
+
+  // 📌 Exportar a PDF => reporte general de lo filtrado en la tabla que se muestra
+const handlePDF = () => {
+
+  const currentUser =
+    profile?.name ||
+    profile?.user ||
+    user?.email ||
+    "Sistema"
+
+  exportVehiculosToPDF(filteredVehiculos, currentUser)
+}
+
+  const columns = getColumns(handleEdit, handleDelete)
 
   return (
     <div>
+
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold italic">
-          REGISTRO DE VEHICULOS
+      <div className="flex justify-between items-center mb-2">
+
+        <h2 className="text-xl font-bold italic">
+          REGISTO DE VEHICULOS
         </h2>
+
         <div className="flex gap-3">
-          {/* BOTON REGISTRO NUEVO*/}
+
           <button
             onClick={() => {
               setMode("create")
               resetForm()
-              setOpenModal(true)
+              setOpen(true)
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded"
+            className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm"
           >
-            <Plus size={18}/>
-             Nuevo
+            <Plus size={18}/> Nuevo
           </button>
-        
-          {/* BOTON PDF*/}
-          <button 
-            onClick={exportToPDF}
-            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded">
-            <FileText size={18}/>
-            PDF
+
+          <button
+            onClick={handlePDF}
+            className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded"
+          >
+            <FileText size={18}/> PDF
           </button>
-        
-          {/* BOTON EXCEL */}
-          <button 
-            onClick={exportToExcel}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded">
-            <FileSpreadsheet size={18}/>
-            Excel
-          </button>
-        </div>
+
+          <button
+            onClick={handleExcel}
+            className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded"
+          >
+            <FileSpreadsheet size={18}/> Excel
+          </button>         
+        </div>   
       </div>
 
-      {/* BUSCADOR */}
+      {/* 🔍 BUSCADOR */}
       <input
         type="text"
         placeholder="Buscar..."
-        className="border px-3 py-2 rounded mb-6 w-full max-w-md"
+        className="border px-3 py-1 rounded mb-4 w-full max-w-md"
         value={search}
-        onChange={(e)=>setSearch(e.target.value)}
+        onChange={(e) => setSearch(e.target.value)}
       />
 
       {/* TABLA */}
-      <VehiculoTable
-        data={filtered}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+      <DataTable data={filteredVehiculos} columns={columns} />
 
       {/* MODAL */}
-      {openModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-200 border-2 border-black" >
+      <VehiculoModal
+        open={open}
+        mode={mode}
+        form={form}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        onClose={() => setOpen(false)}
+        message={message}
+        messageType={messageType}
+      />
 
-            {message && (
-              <div
-                className={`mb-4 p-2 rounded text-white ${
-                  messageType === "error"
-                    ? "bg-red-500"
-                    : "bg-green-500"
-                }`}
-              >
-                {message}
-              </div>
-            )}
-
-            <h2 className="text-xl font-bold mb-4 italic">
-              {mode === "create" && "REGISTRO VEHICULO"}
-              {mode === "edit" && "EDITAR REGISTRO"}
-            </h2>
-
-            <div className="grid grid-cols-2 gap-2">
-              <h3 className="text-blue-950 text-lg font-semibold italic">Marca</h3>
-              <h3 className="text-blue-950 text-lg font-semibold italic">Vehículo</h3>
-              <input name="id_marca" value={form.id_marca} onChange={handleChange} placeholder="marca" className="border p-2"/>
-              <input name="name" value={form.name} onChange={handleChange} placeholder="Vehículo" className="border p-2"/>
-              <h3 className="text-blue-950 text-lg font-semibold italic">Modelo</h3>
-              <h3 className="text-blue-950 text-lg font-semibold italic">Costo</h3>
-              <input name="modelo" value={form.modelo} onChange={handleChange} placeholder="Modelo" className="border p-2"/>
-              <input name="cost" value={form.cost} onChange={handleChange} placeholder="costo" className="border p-2"/>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={()=>setOpenModal(false)}
-                className="bg-red-400 text-white px-4 py-2 rounded"
-              >
-                Cancelar
-              </button>
-
-              {mode !== "view" && (
-                <button
-                  onClick={handleSubmit}
-                  className="bg-blue-600 text-white px-4 py-2 rounded"
-                >
-                  Guardar
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
