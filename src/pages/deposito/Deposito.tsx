@@ -1,406 +1,317 @@
-import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
-import DepositoTable from "./DepositoTable"
-import * as XLSX from "xlsx"
-import jsPDF from "jspdf"
-import autoTable from "jspdf-autotable"
-import { FileText, FileSpreadsheet, } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useForm } from "@/hooks/useForm"
+
+import { DataTable } from "@/components/common/DataTable"
+
 import { useConfirm } from "@/context/ConfirmContext"
 import { useToast } from "@/context/ToastContext"
+import { useAuth } from "@/context/AuthContext"
 
-export default function Deposito() {
+import { FileText, FileSpreadsheet } from "lucide-react"
 
-  // tabla principal
-  const [transaction, setTransaction] = useState<any[]>([])
-  // tablas referenciales
-  const [branches, setBranches] = useState<any[]>([])
-  const [personal, setPersonal] = useState<any[]>([])
-  const [tventa, setTventa] = useState<any[]>([])
-  const [tpago, setTpago] = useState<any[]>([])
-  const [cliente, setCliente] = useState<any[]>([])
-  const [vehiculo, setVehiculo] = useState<any[]>([])
-  // funcionales  
+// 🔹 Hook módulo
+import { useDepositos } from "@/hooks/useDepositos"
+
+// 🔹 Columns
+import { getColumnsDepositos } from "@/components/transactions/columnsDepositos"
+
+// 🔹 Modal
+import DepositosModal from "@/components/transactions/DepositoModal"
+
+// 🔹 Export
+import { exportDepositosToExcel } from "@/utils/export/excel/depositoExport"
+import { exportDepositosToPDF } from "@/utils/export/pdf/depositoExportpdf"
+
+// 🔹 Catálogos
+import { getBranches } from "@/services/branchService"
+import { getEmployees } from "@/services/employeesService"
+import { getCustomer } from "@/services/customerService"
+import { getVehiculos } from "@/services/vehiculoService"
+
+import type {
+  DepositoWithRelations,
+  Deposito
+} from "@/types/deposito"
+
+type Branch = {
+  id: number
+  name_branch: string
+}
+
+type Employee = {
+  id: number
+  name: string
+}
+
+type Customer = {
+  id: number
+  name: string
+}
+
+type Car = {
+  id: number
+  name: string
+  cost: number
+  modelo: string
+  marca: string
+}
+
+export default function Depositos() {
+
+  // 🔍 búsqueda
   const [search, setSearch] = useState("")
-  const [openModal, setOpenModal] = useState(false)
+
+  const {
+    filteredDepositos,
+    editDeposito,
+    removeDeposito
+  } = useDepositos(search)
+
+  // 🔹 catálogos
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [cars, setCars] = useState<Car[]>([])
+
+  // 🔹 UI
+  const [open, setOpen] = useState(false)
+  const [selected, setSelected] =
+    useState<DepositoWithRelations | null>(null)
+
+  // 🔹 mensajes
   const [message, setMessage] = useState("")
-  const [messageType, setMessageType] = useState<"error" | "success" | "">("")
-  const [mode, setMode] = useState<"view" | "edit">("view")
-  const [selected, setSelected] = useState<any>(null)
+  const [messageType, setMessageType] =
+    useState<"error" | "success" | "">("")
+
   const confirm = useConfirm()
   const showToast = useToast()
+  const { profile, user } = useAuth()
 
-  //formualario
-  const [form, setForm] = useState({
-    id_branch: "",
-    id_team: "",
-    id_type_sale:"",
-    id_type_pay:"",
-    amount: "",
-    detail: "",
-    id_car:"",
-    id_customer:"",
-    c_inicial:""
+  // 🔹 form
+  const {
+    form,
+    handleChange,
+    resetForm,
+    setValues
+  } = useForm({
+    initialValues: {
+      id_branch: "",
+      id_employee: "",
+      id_customer: "",
+      id_car: "",
+      costo: "",
+      amount: "",
+      detail: "",
+      type_sale: "",
+      type_pay: ""
+    }
   })
 
+  // 🔥 cargar catálogos
   useEffect(() => {
-    fetchTransaction()
-    fetchPersonal()
-    fetchBranches()
-    fetchTventa()
-    fetchTpago()
-    fetchCliente()
-    fetchVehiculo()
+    const fetchData = async () => {
+      const b = await getBranches()
+      const e = await getEmployees()
+      const c = await getCustomer()
+      const a = await getVehiculos()
+
+      setBranches(b)
+
+      setEmployees(
+        e.map(emp => ({
+          id: emp.id,
+          name: emp.name ?? ""
+        }))
+      )
+
+      setCustomers(
+        c.map(cli => ({
+          id: cli.id,
+          name: cli.name ?? ""
+        }))
+      )
+
+      setCars(
+        a.map(car => ({
+          id: car.id,
+          name: car.name ?? "",
+          cost: car.cost ?? 0,
+          modelo: car.modelo ?? "",
+          marca: car.marca ?? ""
+        }))
+      )
+    }
+
+    fetchData()
   }, [])
 
+  // 🔥 limpiar mensajes
   useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(""), 2000)
-      return () => clearTimeout(timer)
-    }
-  }, [message])
+    if (!message) return
 
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenModal(false)
-    }
-    window.addEventListener("keydown", handleEsc)
-    return () => window.removeEventListener("keydown", handleEsc)
-  }, [])
-
-  // FETCH
-
-  // Fetch Principal
-  const fetchTransaction = async () => {
-    const { data, error } = await supabase
-      .from("transactions")
-      .select(`
-        id,
-        id_type_transaction (id, description),
-        id_branch (id, name_branch),
-        id_team (ci, name),
-        id_type_sale (id, atype),
-        id_type_pay (id, type_p),
-        id_customer (ci, name),
-        id_car (id, name, cost),
-        amount,
-        c_inicial,
-        detail,
-        id_status (id, status)
-      `)
-      .order("id", { ascending: false })
-      .eq("id_status", 1)
-      .eq("id_type_transaction", 8)
-
-    if (error) console.error(error)
-      
-    setTransaction(data || [])
-  }
-
-  // Fetch tipo de venta
-  const fetchTventa = async () => {
-    const { data, error } = await supabase
-      .from("type_sale")
-      .select("id, atype")
-      .order("id")
-
-    if (error) console.error(error)
-    setTventa(data || [])
-  }
-
-  // Fetch tipo de pago
-  const fetchTpago = async () => {
-    const { data, error } = await supabase
-      .from("type_pay")
-      .select("id, type_p")
-      .order("id")
-
-    if (error) console.error(error)
-    setTpago(data || [])
-  }
-
-  // Fetch tabla clientes
-  const fetchCliente = async () => {
-    const { data, error } = await supabase
-      .from("customers")
-      .select("ci, name")
-      .order("ci")
-
-    if (error) console.error(error)
-      
-    setCliente(data || [])
-  }
-
-  // Fetch tabla vehiculos
-  const fetchVehiculo = async () => {
-    const { data, error } = await supabase
-      .from("cars")
-      .select("id, name, cost")
-      .order("id")
-
-    if (error) console.error(error)
-    setVehiculo(data || [])
-  }
- 
-  // Fetch tabla team => personal
-  const fetchPersonal = async () => {
-    const { data, error } = await supabase
-      .from("team")
-      .select("ci, name")
-      .order("name")
-
-    if (error) console.error(error)
-    setPersonal(data || [])
-  }
-
-  // Fetch tabla sucursales
-  const fetchBranches = async () => {
-    const { data, error } = await supabase
-      .from("branches")
-      .select("id, name_branch")
-      .order("name_branch")
-
-    if (error) console.error(error)
-    setBranches(data || [])
-  }
-
-  // Formulario
-  const handleChange = (e: any) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    })
-  }
-
-  // Submit
-  const handleSubmit = async () => {
-
-    // Control de campos vacios
-    if (
-      !form.id_branch ||
-      !form.id_team ||
-      !form.id_type_sale ||
-      !form.id_type_pay ||
-      !form.id_customer ||
-      !form.id_car ||
-      !form.amount ||
-      !form.c_inicial 
-    ) {
-      setMessage("Todos los campos son obligatorios (expeto detalles)")
-      setMessageType("error")
-      return
-    }
-
-    const payload = {
-      id_branch: Number(form.id_branch),
-      id_team: form.id_team,
-      amount: Number(form.amount),
-      detail: form.detail,
-      id_type_transaction: 8,    
-      id_type_sale: Number (form.id_type_sale),
-      id_type_pay: Number (form.id_type_pay),    
-      id_customer: Number (form.id_customer),
-      id_car: Number (form.id_car),
-      c_inicial: Number (form.c_inicial),
-      id_status: 1
-    }
-
-   if (mode === "edit" && selected) {
-      const { error } = await supabase
-        .from("transactions")
-        .update(payload)
-        .eq("id", selected.id)
-
-      if (error) {
-        console.error("UPDATE ERROR:", error)
-        setMessage(error.message)
-        setMessageType("error")
-        return
-      }
-
-      setMessage("Registro actualizado correctamente")
-    }
-
-    setMessageType("success")
-
-      setTimeout(() => {
-      setMode("edit")         
+    const timer = setTimeout(() => {
       setMessage("")
       setMessageType("")
-    }, 1500)
+    }, 2000)
 
-    fetchTransaction()
-  }
+    return () => clearTimeout(timer)
+  }, [message])
 
-  // ================= ACCIONES =================
+  // 📌 Ver detalle
+  const handleView = (row: DepositoWithRelations) => {
+    setSelected(row)
 
+    setValues({
+      id_branch: row.id_branch
+        ? String(row.id_branch)
+        : "",
 
+      id_employee: row.id_employee
+        ? String(row.id_employee)
+        : "",
 
-  // Se corrigen posibles cambios en el proceso del depósito
-  const handleEdit = (row: any) => {
-      setSelected(row)
-      setMode("edit")
+      id_customer: row.id_customer
+        ? String(row.id_customer)
+        : "",
 
-      setForm({
-        id_branch: row.id_branch?.id || "",
-        id_team: row.id_team?.ci || "",
-        id_type_sale: row.id_type_sale?.id || "",
-        id_type_pay: row.id_type_pay.id || "",
-        amount: row.amount || "",
-        detail: row.detail || "",
-        id_customer: row.id_customer?.ci || "",
-        id_car: row.id_car?.id || "",
-        c_inicial: row.c_inicial || ""
-      })
+      id_car: row.id_car
+        ? String(row.id_car)
+        : "",
 
-      setOpenModal(true)
-    }
+      costo: row.costo
+        ? String(row.costo)
+        : "",
 
-  // Se da de baja el depósito cambiando el status a 6 => BAJA
-   const handleDelete = (row:any) => {
-        confirm({
-          title: "Eliminar registro",
-          message: "¿Seguro que deseas eliminar este registro?",
-          confirmText: "Eliminar",
-          onConfirm: async () => {
-            const { error } = await supabase
-              .from("transactions")
-              .update({ id_status: 6 })
-              .eq("id", row.id)
+      amount: row.amount
+        ? String(row.amount)
+        : "",
 
-            if (error) {
-              showToast("Error al eliminar", "error")
-            } else {
-              showToast("Proceso concluido con éxito ✅", "success")
-              fetchTransaction()
-            }
-          }
-        })
-      }
-
-    // Se confirma el depósito cambiando el status a 2 => Pagado
-    const handleConfirmar = () => {
-      confirm({
-        title: "CONFIRMAR DEPÓSITO",
-        message: "¿Seguro que deseas confirmar el depósito?",
-        confirmText: "Confirmar",
-
-        onConfirm: async () => {
-          if (!selected?.id) {
-            showToast("ID no válido", "error")
-            return
-          }
-
-          const { error } = await supabase
-            .from("transactions")
-            .update({ id_status: 2 })
-            .eq("id", selected.id)
-
-          if (error) {
-            showToast("Error al confirmar", "error")
-          } else {
-            showToast("Proceso concluido con éxito ✅", "success")
-            fetchTransaction()
-            setOpenModal(false) 
-          }
-        }
-      })
-    }
-
-  
-  // BUSCADOR
-  // Filtro asesor, sucursal, detalle, tipo de venta, tipo de pago, cliente
-  const filtered = transaction.filter((p) =>
-    `${p.id_team?.name || ""} ${p.id_branch?.name_branch || ""} ${p.id_customer?.name || ""} 
-      ${p.detail || ""} ${p.id_type_sale?.atype || ""} ${p.id_type_pay?.type_p || ""} ${p.amount} ${p.c_inicial}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  )
-
-  // EXPORT
-  //Excel
-  const exportToExcel = () => {
-    if (filtered.length === 0) {
-      setMessage("No hay datos para exportar")
-      setMessageType("error")
-      return
-    }
-
-    const dataExport = filtered.map((p) => ({
-      ID: p.id,      
-      Sucursal: p.id_branch?.name_branch,
-      Solicitante: p.id_team?.name,
-      T_Venta: p.id_type_sale?.atype,
-      T_Pago: p.id_type_pay?.type_p,
-      Cliente: p.id_customer?.name,
-      Vehiculo: p.id_car?.name,
-      Costo: p.amount,
-      
-      C_Inicial: p.c_inicial,    
-      Detalle: p.detail
-    }))
-
-    const worksheet = XLSX.utils.json_to_sheet(dataExport)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "DepxProcesar")
-    XLSX.writeFile(workbook, "Depositos_por_procesar.xlsx")
-  }
-
-  //PDF
-  const exportToPDF = () => {
-    if (filtered.length === 0) {
-      setMessage("No hay datos para exportar")
-      setMessageType("error")
-      return
-    }
-
-    const doc = new jsPDF()
-
-    doc.text("Depositos Por Procesar", 14, 10)
-
-    const tableRows = filtered.map((p) => ([
-      p.id,
-      p.id_branch?.name_branch,
-      p.id_team?.name,
-      p.id_type_sale?.atype,
-      p.id_type_pay?.type_p,
-      p.id_customer?.name,
-      p.id_car?.name,
-      p.amount,
-      p.c_inicial,
-      p.detail
-    ]))
-
-    autoTable(doc, {
-      head: [["ID", "SUCURSAL","ASESOR","T.VENTA", "T.PAGO","CLIENTE", "VEHICULO", "COSTO", "C.INICIAL","DETALLE"]],
-      body: tableRows,
-      startY: 20
+      detail: row.detail || "",
+      type_sale: row.type_sale || "",
+      type_pay: row.type_pay || ""
     })
 
-    doc.save("DepositoPorProcesar.pdf")
+    setOpen(true)
   }
 
-  // Vista del archivo
+  // 📌 Confirmar depósito
+  const handleConfirm = async () => {
+
+    if (!selected) return
+
+    try {
+      await editDeposito(selected.id, {
+        id_branch: Number(form.id_branch),
+        id_employee: Number(form.id_employee),
+        id_customer: form.id_customer
+          ? Number(form.id_customer)
+          : null,
+
+        id_car: form.id_car
+          ? Number(form.id_car)
+          : null,
+
+        costo: form.costo
+          ? Number(form.costo)
+          : null,
+
+        amount: Number(form.amount),
+
+        detail: form.detail,
+
+        type_sale: form.type_sale || null,
+        type_pay: form.type_pay || null
+      })
+
+      setMessage("Depósito confirmado correctamente")
+      setMessageType("success")
+
+      setTimeout(() => {
+        setOpen(false)
+        resetForm()
+        setSelected(null)
+      }, 1200)
+
+    } catch {
+      setMessage("Error al confirmar depósito")
+      setMessageType("error")
+    }
+  }
+
+  // 📌 Dar baja
+  const handleDelete = (row: Deposito) => {
+    confirm({
+      title: "Dar de baja depósito",
+      message:
+        "¿Seguro que deseas dar de baja esta solicitud?",
+      confirmText: "Confirmar",
+
+      onConfirm: async () => {
+        try {
+          await removeDeposito(row.id)
+          showToast(
+            "Solicitud dada de baja correctamente ✅",
+            "success"
+          )
+        } catch {
+          showToast(
+            "Error en proceso",
+            "error"
+          )
+        }
+      }
+    })
+  }
+
+  // 📌 Exportaciones
+  const handleExcel = () => {
+    exportDepositosToExcel(filteredDepositos)
+  }
+
+  const handlePDF = () => {
+    const currentUser =
+      profile?.name ||
+      profile?.user ||
+      user?.email ||
+      "Sistema"
+
+    exportDepositosToPDF(
+      filteredDepositos,
+      currentUser
+    )
+  }
+
+  // 📌 Columns
+  const columns = getColumnsDepositos(
+    handleView,
+    handleDelete
+  )
+
   return (
     <div>
+
       {/* HEADER */}
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-2xl text-blue-800 font-bold italic">
-         DEPÓSITOS
+
+        <h2 className="text-xl font-bold italic">
+          CONFIRMACIÓN DE DEPÓSITO
         </h2>
 
-        <div className="flex gap-3">    
-      
-          <button 
-            onClick={exportToPDF}
-            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded">
-            <FileText size={18}/>
+        <div className="flex gap-3">
+
+          <button
+            onClick={handlePDF}
+            className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded"
+          >
+            <FileText size={18} />
             PDF
           </button>
 
-          <button 
-            onClick={exportToExcel}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded">
-            <FileSpreadsheet size={18}/>
+          <button
+            onClick={handleExcel}
+            className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded"
+          >
+            <FileSpreadsheet size={18} />
             Excel
           </button>
 
@@ -410,127 +321,36 @@ export default function Deposito() {
       {/* BUSCADOR */}
       <input
         type="text"
-        placeholder="Buscar..."
-        className="border px-3 py-2 rounded mb-6 w-full max-w-md"
+        placeholder="Buscar depósito..."
+        className="border px-3 py-1 rounded mb-4 w-full max-w-md"
         value={search}
-        onChange={(e)=>setSearch(e.target.value)}
+        onChange={(e) =>
+          setSearch(e.target.value)
+        }
       />
 
       {/* TABLA */}
-      <DepositoTable
-        data={filtered}        
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+      <DataTable
+        data={filteredDepositos}
+        columns={columns}
       />
 
       {/* MODAL */}
-      {openModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-200 border-2 border-black" >
-            {message && (
-              <div className={`mb-4 p-2 rounded text-white ${
-                messageType === "error" ? "bg-red-500" : "bg-green-500"
-              }`}>
-                {message}
-              </div>
-            )}
-
-            <h2 className="text-2xl font-bold mb-4 text-blue-800 italic">           
-              {mode === "edit" && "CONFIRMACION DE DEPÓSITO"}
-            </h2>
-            <hr className="mb-4"/>
-            <h2 className="text-xl text-red-600 font-semibold italic mt-2 mb-2"> Datos Sucursal / Asesor</h2>
-            
-            {/* Formulario */}
-            <div className="grid grid-cols-2 gap-2">             
-              <select name="id_branch" value={form.id_branch} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar sucursal</option>
-                {branches.map(b=>(
-                  <option key={b.id} value={b.id}>{b.name_branch}</option>
-                ))}
-              </select>
-              <select name="id_team" value={form.id_team} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar Asesor</option>
-                {personal.map(b=>(
-                  <option key={b.ci} value={b.ci}>{b.name}</option>
-                ))}
-              </select> 
-
-               <h2 className="text-xl text-red-600 font-semibold italic mt-2"> Datos Vehículo</h2>
-               <br />             
-              <select name="id_car" value={form.id_car} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar el vehiculo</option>
-                {vehiculo.map(r=>(
-                  <option key={r.id} value={r.id}>{r.name}</option>
-                ))}
-              </select>
-              <input name="amount" value={form.amount} onChange={handleChange} disabled={mode==="view"} placeholder="Monto" className="border p-2"/>
-
-              <h2 className="text-xl text-red-600 font-semibold italic mt-2"> Datos Cliente</h2>
-              <br />             
-            
-              <select name="id_customer" value={form.id_customer} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar Cliente</option>
-                {cliente.map(b=>(
-                  <option key={b.ci} value={b.ci}>{b.name}</option>
-                ))}
-              </select>
-              <br />
-              <h2 className="text-xl text-red-600 font-semibold italic mt-2"> Datos Depósito</h2>
-              <br />                         
-              <select name="id_type_sale" value={form.id_type_sale} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar el tipo de venta</option>
-                {tventa.map(b=>(
-                  <option key={b.id} value={b.id}>{b.atype}</option>
-                ))}
-              </select>
-              <input name="c_inicial" value={form.c_inicial} onChange={handleChange} disabled={mode==="view"} placeholder="Cuota inicial" className="border p-2"/>
-              
-              <h3 className="text-blue-950 text-lg font-semibold italic">T. Pago</h3>
-              <br />
-              <select name="id_type_pay" value={form.id_type_pay} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar el tipo de pago</option>
-                {tpago.map(b=>(
-                  <option key={b.id} value={b.id}>{b.type_p}</option>
-                ))}
-              </select>
-              <br />
-             
-              <h3 className="text-blue-950 text-lg font-semibold italic">Detalle</h3>
-              <br />             
-              <input name="detail" value={form.detail} onChange={handleChange} disabled={mode==="view"} placeholder="Detalle" className="border p-2"/>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-8">
-
-              <button
-                onClick={()=>setOpenModal(false)}
-                className="bg-red-400 text-white px-4 py-2 rounded"
-              >
-                Cancelar
-              </button>
-              
-                <button
-                  onClick={handleSubmit}
-                  className="bg-blue-600 text-white px-4 py-2 rounded"
-                >
-                  Guardar Cambios
-                </button>  
-                 <button
-                  onClick={handleConfirmar}
-                  className="bg-green-800 text-white px-4 py-2 rounded"
-                >
-                  Confirmar Depósito
-                </button>             
-           
-
-            </div>
-
-          </div>
-
-        </div>
-      )}
+      <DepositosModal
+        open={open}
+        form={form}
+        onChange={handleChange}
+        onConfirm={handleConfirm}
+        onClose={() => setOpen(false)}
+        message={message}
+        messageType={messageType}
+        branches={branches}
+        employees={employees}
+        customers={customers}
+        cars={cars}
+      />
 
     </div>
   )
 }
+

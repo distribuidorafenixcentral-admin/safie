@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase"
 // TOTAL PERSONAL
 export const getTotalPersonal = async (): Promise<number> => {
   const { count, error } = await supabase
-    .from("team")
+    .from("employees")
     .select("*", { count: "exact", head: true })
 
   if (error) {
