@@ -20,10 +20,22 @@ type Props = {
     modelo: string
     marca: string
   }[]
+
+  cuentas: {
+    id: number
+    numero_cta: string
+    banco: string
+    titular: string
+    status: number
+  }[]
 }
 
 export default function DepositosModal(props: Props) {
   if (!props.open) return null
+
+  const requiresCuenta =
+    props.form.type_pay === "QR" ||
+    props.form.type_pay === "Depósito en Cuenta"
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-10">
@@ -199,6 +211,35 @@ export default function DepositosModal(props: Props) {
             </select>
           </div>
 
+          {/* Cuenta bancaria */}
+          <div className="flex flex-col gap-1 col-span-2">
+            <label className="text-sm font-semibold italic">
+              Cuenta de destino
+            </label>
+
+            <select
+              name="id_cuenta"
+              value={props.form.id_cuenta || ""}
+              onChange={props.onChange}
+              disabled={!requiresCuenta}
+              className="border p-1 rounded-sm pl-2 disabled:bg-gray-200"
+            >
+              <option value="">
+                {requiresCuenta
+                  ? "Seleccione una cuenta"
+                  : "No aplica para efectivo"}
+              </option>
+
+              {props.cuentas
+                .filter(c => c.status === 1)
+                .map(c => (
+                  <option key={c.id} value={String(c.id)}>
+                    {c.banco} | {c.numero_cta} | {c.titular}
+                  </option>
+                ))}
+            </select>
+          </div>
+
           {/* Detalle */}
           <div className="flex flex-col gap-1 col-span-2">
             <label className="text-sm font-semibold italic">
@@ -240,4 +281,3 @@ export default function DepositosModal(props: Props) {
     </div>
   )
 }
-

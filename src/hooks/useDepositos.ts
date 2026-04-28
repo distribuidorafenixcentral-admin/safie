@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 
 import type {
-  Deposito,
+  DepositoWithRelations,
   DepositoUpdate
 } from "@/types/deposito"
 
@@ -20,12 +20,16 @@ const STATUS_PENDIENTE = 1
 // 📌 Hook central de depósitos
 export const useDepositos = (search: string) => {
 
-  const [depositos, setDepositos] = useState<Deposito[]>([])
+  const [depositos, setDepositos] = useState<DepositoWithRelations[]>([])
 
   // 🔥 Obtener datos iniciales
   const fetchDepositos = useCallback(async () => {
-    const data = await getDepositos() as Deposito[]
-    setDepositos(data)
+    try {
+      const data = await getDepositos() as DepositoWithRelations[]
+      setDepositos(data)
+    } catch (error) {
+      console.error("Error al obtener depósitos:", error)
+    }
   }, [])
 
   useEffect(() => {
@@ -38,7 +42,7 @@ export const useDepositos = (search: string) => {
     const newItem = payload.new
     const oldItem = payload.old
 
-    // 🔹 Validar que sea solicitud de depósito pendiente
+    // 🔹 Validar que sea solicitud pendiente
     const isValidDeposito = (item: any) =>
       item &&
       item.id_type_transaction === TYPE_SOLICITUD &&
@@ -47,7 +51,7 @@ export const useDepositos = (search: string) => {
     // 📌 INSERT
     if (payload.eventType === "INSERT" && newItem) {
       if (isValidDeposito(newItem)) {
-        // 🔥 Refrescamos para obtener relaciones completas
+        // 🔥 Refresca para traer relaciones completas
         fetchDepositos()
       }
     }
@@ -55,7 +59,7 @@ export const useDepositos = (search: string) => {
     // 📌 UPDATE
     if (payload.eventType === "UPDATE" && newItem) {
 
-      // Si ya no cumple condiciones (confirmado o eliminado)
+      // Si deja de ser pendiente, eliminar de lista
       if (!isValidDeposito(newItem)) {
         setDepositos(prev =>
           prev.filter(i => i.id !== newItem.id)
@@ -63,7 +67,7 @@ export const useDepositos = (search: string) => {
         return
       }
 
-      // 🔥 Refrescamos para mantener relaciones correctas
+      // 🔥 Refrescar para mantener datos relacionados
       fetchDepositos()
     }
 
@@ -79,8 +83,13 @@ export const useDepositos = (search: string) => {
 
   // 🔍 Filtro búsqueda
   const filteredDepositos = depositos.filter(d =>
-    d.detail.toLowerCase().includes(search.toLowerCase()) ||
+    d.detail?.toLowerCase().includes(search.toLowerCase()) ||
+    d.customers?.name?.toLowerCase().includes(search.toLowerCase()) ||
+    d.cars?.name?.toLowerCase().includes(search.toLowerCase()) ||
+    d.branches?.name_branch?.toLowerCase().includes(search.toLowerCase()) ||
+    d.employees?.name?.toLowerCase().includes(search.toLowerCase()) ||
     String(d.amount).includes(search) ||
+    String(d.costo ?? "").includes(search) ||
     String(d.id).includes(search)
   )
 
@@ -90,11 +99,17 @@ export const useDepositos = (search: string) => {
     data: DepositoUpdate
   ) => {
     await confirmDeposito(id, data)
+
+    // 🔥 Refrescar después de confirmar
+    await fetchDepositos()
   }
 
   // 📌 Dar baja
   const removeDeposito = async (id: number) => {
     await rejectDeposito(id)
+
+    // 🔥 Refrescar después de baja
+    await fetchDepositos()
   }
 
   return {

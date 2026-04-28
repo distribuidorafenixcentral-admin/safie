@@ -27,6 +27,7 @@ import { getBranches } from "@/services/branchService"
 import { getEmployees } from "@/services/employeesService"
 import { getCustomer } from "@/services/customerService"
 import { getVehiculos } from "@/services/vehiculoService"
+import { getCuentas } from "@/services/cuentasService"
 
 import type {
   DepositoWithRelations,
@@ -56,6 +57,14 @@ type Car = {
   marca: string
 }
 
+type Cuenta = {
+  id: number
+  numero_cta: string
+  banco: string
+  titular: string
+  status: number
+}
+
 export default function Depositos() {
 
   // 🔍 búsqueda
@@ -72,6 +81,7 @@ export default function Depositos() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [cars, setCars] = useState<Car[]>([])
+  const [cuentas, setCuentas] = useState<Cuenta[]>([])
 
   // 🔹 UI
   const [open, setOpen] = useState(false)
@@ -99,6 +109,7 @@ export default function Depositos() {
       id_employee: "",
       id_customer: "",
       id_car: "",
+      id_cuenta: "",
       costo: "",
       amount: "",
       detail: "",
@@ -114,6 +125,7 @@ export default function Depositos() {
       const e = await getEmployees()
       const c = await getCustomer()
       const a = await getVehiculos()
+      const cuentasData = await getCuentas()
 
       setBranches(b)
 
@@ -139,6 +151,10 @@ export default function Depositos() {
           modelo: car.modelo ?? "",
           marca: car.marca ?? ""
         }))
+      )
+
+      setCuentas(
+        cuentasData.filter((c: any) => c.status === 1)
       )
     }
 
@@ -178,6 +194,10 @@ export default function Depositos() {
         ? String(row.id_car)
         : "",
 
+      id_cuenta: row.id_cuenta
+        ? String(row.id_cuenta)
+        : "",
+
       costo: row.costo
         ? String(row.costo)
         : "",
@@ -199,10 +219,25 @@ export default function Depositos() {
 
     if (!selected) return
 
+    // 🔒 Validación cuenta obligatoria
+    if (
+      (form.type_pay === "QR" ||
+        form.type_pay === "Depósito en Cuenta") &&
+      !form.id_cuenta
+    ) {
+      setMessage(
+        "Debe seleccionar una cuenta para este tipo de pago"
+      )
+      setMessageType("error")
+      return
+    }
+
     try {
       await editDeposito(selected.id, {
         id_branch: Number(form.id_branch),
+
         id_employee: Number(form.id_employee),
+
         id_customer: form.id_customer
           ? Number(form.id_customer)
           : null,
@@ -210,6 +245,13 @@ export default function Depositos() {
         id_car: form.id_car
           ? Number(form.id_car)
           : null,
+
+        id_cuenta:
+          form.type_pay === "Efectivo"
+            ? null
+            : form.id_cuenta
+            ? Number(form.id_cuenta)
+            : null,
 
         costo: form.costo
           ? Number(form.costo)
@@ -249,10 +291,12 @@ export default function Depositos() {
       onConfirm: async () => {
         try {
           await removeDeposito(row.id)
+
           showToast(
             "Solicitud dada de baja correctamente ✅",
             "success"
           )
+
         } catch {
           showToast(
             "Error en proceso",
@@ -348,9 +392,9 @@ export default function Depositos() {
         employees={employees}
         customers={customers}
         cars={cars}
+        cuentas={cuentas}
       />
 
     </div>
   )
 }
-

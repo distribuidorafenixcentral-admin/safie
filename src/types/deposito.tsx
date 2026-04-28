@@ -28,7 +28,10 @@ export interface DepositoUpdate {
   id_employee?: number
   id_customer?: number | null
   id_car?: number | null
+
+  // 🏦 Cuenta destino (obligatoria según tipo de pago)
   id_cuenta?: number | null
+
   amount?: number
   costo?: number | null
 
@@ -38,8 +41,9 @@ export interface DepositoUpdate {
 
   // Estado:
   // 1 = pendiente
-  // 2 = eliminado
-  // 3 = confirmado
+  // 2 = pagado / confirmado
+  // 3 = rechazado
+  // 4 = baja / eliminado
   id_status?: number
 }
 
@@ -77,6 +81,7 @@ export interface DepositoWithRelations extends Deposito {
   type_transaction?: {
     id: number
     description: string
+    type_trans?: string
   } | null
 
   // 📌 Estado
@@ -85,12 +90,20 @@ export interface DepositoWithRelations extends Deposito {
     status: string
   } | null
 
-  // 🏦 Cuenta bancaria
+  // 🏦 Cuenta bancaria destino
   cuentas?: {
     id: number
+
+    // Número de cuenta
     numero_cta: string
+
+    // Banco
     banco: string
+
+    // Titular
     titular: string
+
+    // Estado de cuenta
     status: number
   } | null
 }

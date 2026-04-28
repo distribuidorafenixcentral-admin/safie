@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase"
 import type { DepositoUpdate } from "@/types/deposito"
 
@@ -7,8 +6,8 @@ const TYPE_SOLICITUD = 8
 
 // Estados
 const STATUS_PENDIENTE = 1
-const STATUS_BAJA = 4
 const STATUS_CONFIRMADO = 2
+const STATUS_BAJA = 4
 
 // 📌 Obtener depósitos pendientes
 export const getDepositos = async () => {
@@ -38,10 +37,18 @@ export const confirmDeposito = async (
   id: number,
   data: DepositoUpdate
 ) => {
+
+  //  Si el pago es efectivo no registra cuenta
+  const cuentaFinal =
+    data.type_pay === "Efectivo"
+      ? null
+      : data.id_cuenta || null
+
   const { error } = await supabase
     .from("transactions")
     .update({
       ...data,
+      id_cuenta: cuentaFinal,
       id_status: STATUS_CONFIRMADO
     })
     .eq("id", id)
@@ -85,4 +92,3 @@ export const getDepositoById = async (id: number) => {
 
   return data
 }
-
