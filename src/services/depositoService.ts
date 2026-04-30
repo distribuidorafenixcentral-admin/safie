@@ -49,7 +49,9 @@ export const confirmDeposito = async (
     .update({
       ...data,
       id_cuenta: cuentaFinal,
-      id_status: STATUS_CONFIRMADO
+      id_status: STATUS_CONFIRMADO,
+      confirmed_at: new Date().toISOString()
+
     })
     .eq("id", id)
     .eq("id_type_transaction", TYPE_SOLICITUD)
