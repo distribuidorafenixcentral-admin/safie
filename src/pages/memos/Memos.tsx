@@ -1,369 +1,230 @@
-import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
-import MemosTable from "./MemosTable"
-import * as XLSX from "xlsx"
-import jsPDF from "jspdf"
-import autoTable from "jspdf-autotable"
+import { useState, useEffect } from "react"
+import { useMemos } from "@/hooks/useMemos"
+import { useForm } from "@/hooks/useForm"
+
+import { DataTable } from "@/components/common/DataTable"
+import { getColumnsMemos } from "@/components/transactions/columnsMemos"
+
+import { useConfirm } from "@/context/ConfirmContext"
+import { useToast } from "@/context/ToastContext"
 import { useAuth } from "@/context/AuthContext"
 
 import { Plus, FileText, FileSpreadsheet } from "lucide-react"
-import { generatePDF } from "@/utils/pdf/templates/pdfTemplates"
+import MemosModal from "@/components/transactions/MemosModal"
 
+import { exportMemosToPDF } from "@/utils/export/pdf/memosxportpdf"
+import { exportMemosToExcel } from "@/utils/export/excel/memosExport"
 
-// REGLAS TIPO DE PAGO
-const TYPE_PAY_RULES: Record<number, { requireBank: boolean }> = {
-  1: { requireBank: false }, // EFECTIVO
-  2: { requireBank: true },
-  3: { requireBank: true },
-  4: { requireBank: true },
-}
+import { getBranches } from "@/services/branchService"
+import { getEmployees } from "@/services/employeesService"
+import { getStatusTransactions } from "@/services/statustransactions"
+
+import type { MemosWithRelations } from "@/types/memos"
+
+type Branch = { id: number; name_branch: string }
+type Employee = { id: number; name: string }
+type Estado = { id: number; status: string }
 
 export default function Memos() {
-  // Recuperar datos de la session
-  
-  const { user, profile} = useAuth()
 
-  useEffect(() => {
-  console.log("🔥 Memos mounted")
-  console.log("USER:", user)
-  console.log("PROFILE:", profile)
-}, [user, profile])
-
-  const [personal, setPersonal] = useState<any[]>([])
-  const [cuentas, setCuentas] = useState<any[]>([])
-  const [tpago, setTpago] = useState<any[]>([])
-  const [transaction, setTransaction] = useState<any[]>([])
   const [search, setSearch] = useState("")
-  const [openModal, setOpenModal] = useState(false)
-  const [branches, setBranches] = useState<any[]>([])
+
+  const {
+    filteredMemos,
+    addMemos,
+    editMemos,
+    removeMemos
+  } = useMemos(search)
+
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [statusTransaction, setStatusTransaction] = useState<Estado[]>([])
+
+  const [open, setOpen] = useState(false)
+  const [mode, setMode] = useState<"create" | "edit">("create")
+  const [selected, setSelected] = useState<MemosWithRelations | null>(null)
+
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
-  const [mode, setMode] = useState<"create" | "view" | "edit">("create")
-  const [selected, setSelected] = useState<any>(null)
 
-  
+  const confirm = useConfirm()
+  const showToast = useToast()
+  const { profile, user } = useAuth()
 
-  const [form, setForm] = useState({
-    id_type_transaction: "",
-    id_branch: "",
-    id_team: "",
-    id_type_pay: "",
-    amount: "",
-    id_cuenta: "",
-    detail: ""
-  })
-
-  // 🔹 DERIVADOS
-  const currentTypePay = Number(form.id_type_pay)
-  const requireBank = TYPE_PAY_RULES[currentTypePay]?.requireBank ?? false
-
-  // 🔹 FILTRO PERSONAL POR SUCURSAL
-  const filteredPersonal = personal.filter(p =>
-    form.id_branch ? p.id_branch == form.id_branch : true
-  )
-
-  //Imprimir el documento para firma  
-const handleExport = (row: any) => {
-
-  if (!row) {
-    console.error("No hay datos para exportar")
-    return
-  }
-
-  const header = {
-    title: "MEMORÁNDUM",
-    subtitle: "(Comprobante de ingreso)",    
-    date: new Date().toLocaleDateString(),
-    user: profile?.user || "N/A"
-  }
-
-  const userdata = {
-    usuario: profile?.name || "N/A",
-    cargo_user: profile?.roleName || "N/A"
-  }
-
-  const datos = {
-
-    fecha: row.created_at
-      ? new Date(row.created_at).toLocaleDateString("es-BO")
-      : "",
-    sucursal: row.id_branch?.name_branch || "-",
-    nombre: row.id_team?.name || "-",
-    cargo: row.id_team?.role?.role || "-",
-    motivo: row.detail || "-",
-    tpago: row.id_type_pay?.type_p || "-",
-    banco: row.id_cuenta?.banco || "   -",
-    cta: row.id_cuenta?.numero_cta || "",
-    titular: row.id_cuenta?.titular || "",
-    monto: Number(row.amount) || 0
-  }
-
-  const doc = generatePDF(header, datos, userdata)
-  doc.output("dataurlnewwindow")
-}
-  useEffect(() => {
-    fetchTransaction()
-    fetchPersonal()
-    fetchCuentas()
-    fetchTpago()
-    fetchBranches()
-  }, [])
-
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(""), 2000)
-      return () => clearTimeout(timer)
-    }
-  }, [message])
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenModal(false)
-    }
-    window.addEventListener("keydown", handleEsc)
-    return () => window.removeEventListener("keydown", handleEsc)
-  }, [])
-
-  //  FETCH 
-
-  const fetchTransaction = async () => {
-    const { data, error } = await supabase
-      .from("transactions")
-      .select(`
-        id,
-        id_type_transaction (id, description),
-        id_branch (id, name_branch),
-        id_team (ci, name, role (role)),
-        id_type_pay (id, type_p),
-        amount,
-        detail,
-        created_at,
-        id_cuenta (id, banco, titular, numero_cta),
-        id_status (id, status)
-      `)
-      .eq("id_status", 2)
-      .eq("id_type_transaction" , 9)
-      .order("id", { ascending: false })
-
-    if (error) console.error(error)
-    setTransaction(data || [])
-  }
-
-  const fetchPersonal = async () => {
-    const { data, error } = await supabase
-      .from("team")
-      .select("ci, name, id_branch")
-      .order("name")
-
-    if (error) console.error(error)
-    setPersonal(data || [])
-  }
-
-  const fetchTpago = async () => {
-    const { data, error } = await supabase
-      .from("type_pay")
-      .select("id, type_p")
-      .order("id")
-
-    if (error) console.error(error)
-    setTpago(data || [])
-  }
-
-  const fetchCuentas = async () => {
-    const { data, error} = await supabase
-      .from("cuentas")
-      .select("id, banco, numero_cta, titular")
-      .order("id")
-    
-    if (error) console.error(error)
-    else setCuentas(data || [])
-  }
-
-  const fetchBranches = async () => {
-    const { data, error } = await supabase
-      .from("branches")
-      .select("id, name_branch")
-      .order("name_branch")
-
-    if (error) console.error(error)
-    setBranches(data || [])
-  }
-
-  // ================= FORM =================
-
-  const handleChange = (e: any) => {
-    const { name, value } = e.target
-
-    setForm(prev => ({
-      ...prev,
-      [name]: value,
-      ...(name === "id_branch" && { id_team: "" }) // 🔹 reset personal al cambiar sucursal
-    }))
-  }
-
-  const resetForm = () => {
-    setForm({
+  const {
+    form,
+    handleChange,
+    resetForm,
+    setValues
+  } = useForm({
+    initialValues: {
       id_type_transaction: "",
       id_branch: "",
-      id_team: "",
-      id_cuenta:"",
-      id_type_pay:"",
+      id_employee: "",
       amount: "",
-      detail: ""
-    })
+      detail: "",
+      id_status: ""
+    }
+  })
+
+  // 🔥 catálogos
+useEffect(() => {
+  const fetchData = async () => {
+    const b = await getBranches()
+    console.log("BRANCHES RAW:", b)
+
+    const e = await getEmployees()
+    console.log("EMPLOYEES RAW:", e)
+
+    const d = await getStatusTransactions()
+    console.log("STATUS RAW:", d)
+
+    setBranches(b)
+
+    const mappedEmployees = e.map(emp => ({
+      id: emp.id,
+      name: emp.name ?? ""
+    }))
+    console.log("EMPLOYEES MAPPED:", mappedEmployees)
+
+    setEmployees(mappedEmployees)
+
+    const mappedStatus = (d || []).map(s => ({
+      id: s.id,
+      status: s.status ?? ""
+    }))
+    console.log("STATUS MAPPED:", mappedStatus)
+
+    setStatusTransaction(mappedStatus)
   }
 
-  // ================= SUBMIT =================
+  fetchData()
+}, [])
 
+  // 🔥 limpiar mensajes
+  useEffect(() => {
+    if (!message) return
+
+    const timer = setTimeout(() => {
+      setMessage("")
+      setMessageType("")
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [message])
+
+  // 📌 SUBMIT
   const handleSubmit = async () => {
-
 
     if (
       !form.id_branch ||
-      !form.id_type_pay ||
-      !form.id_team ||
+      !form.id_employee ||
       !form.amount ||
-      !form.detail 
+      !form.detail ||
+      !form.id_status
     ) {
-      setMessage("Todos los campos son obligatorios")
+      setMessage("Campos obligatorios incompletos")
       setMessageType("error")
       return
     }
 
-    const payload = {
-      id_type_transaction: 9,
-      id_branch: Number(form.id_branch),
-      id_team: form.id_team,
-      id_cuenta: requireBank ? Number(form.id_cuenta) : null, 
-      id_type_pay: Number(form.id_type_pay),
-      amount: Number(form.amount),
-      detail: form.detail,
-      id_status: 2
-    }
+    try {
 
-    if (mode === "create") {
-      const { error } = await supabase
-        .from("transactions")
-        .insert(payload)
+      if (mode === "create") {
+        await addMemos({
+          id_branch: Number(form.id_branch),
+          id_employee: Number(form.id_employee),
+          amount: Number(form.amount),
+          detail: form.detail,
+          id_status: Number(form.id_status)
+        })
 
-      if (error) {
-        console.error("INSERT ERROR:", error)
-        setMessage(error.message)
-        setMessageType("error")
-        return
+        setMessage("Sanción registrada correctamente")
       }
 
-      setMessage("Registro guardado correctamente")
-    }
+      if (mode === "edit" && selected) {
+        await editMemos(selected.id, {
+          amount: Number(form.amount),
+          id_status: Number(form.id_status)
+        })
 
-    if (mode === "edit" && selected) {
-      const { error } = await supabase
-        .from("transactions")
-        .update(payload)
-        .eq("id", selected.id)
-
-      if (error) {
-        console.error("UPDATE ERROR:", error)
-        setMessage(error.message)
-        setMessageType("error")
-        return
+        setMessage("Sanción actualizada correctamente")
       }
 
-      setMessage("Registro actualizado correctamente")
+      setMessageType("success")
+
+      setTimeout(() => {
+        setOpen(false)
+        resetForm()
+        setSelected(null)
+        setMode("create")
+      }, 1200)
+
+    } catch (error: any) {
+      setMessage(error.message || "Error en proceso")
+      setMessageType("error")
     }
-
-    setMessageType("success")
-
-    setTimeout(() => {
-      setOpenModal(false)
-      resetForm()
-      setSelected(null)
-      setMode("create")
-      setMessage("")
-      setMessageType("")
-    }, 1500)
-
-    fetchTransaction()    
   }
 
-  // 
+  // 📌 EDIT
+  const handleEdit = (row: MemosWithRelations) => {
+    setSelected(row)
+    setMode("edit")
 
-  // Filtro del buscador
-
-  const filtered = transaction.filter((p) =>
-    `${p.id_team?.name || ""} ${p.id_branch?.name_branch || ""}
-     ${p.id_cuenta?.banco || ""} ${p.detail || ""} ${p.amount}
-     ${p.id_cuenta?.titular || ""} ${p.id_cuenta?.numero_cta || ""}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  )
-
-  // Export PDF
-
-  const exportToExcel = () => {
-    if (filtered.length === 0) {
-      setMessage("No hay datos para exportar")
-      setMessageType("error")
-      return
-    }
-
-    const dataExport = filtered.map((p) => ({
-      ID: p.id,
-      Sucursal: p.id_branch?.name_branch,
-      Personal: p.id_team?.name || "",
-      T_Pago: p.id_type_pay?.type_p,
-      Banco: p.id_cuenta?.banco,
-      N_Cuenta: p.id_cuenta?.numero_cta,
-      Titular: p.id_cuenta?.titular,
-      Monto: p.amount,
-      Detalle: p.detail
-    }))
-
-    const worksheet = XLSX.utils.json_to_sheet(dataExport)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "HisMemos")
-    XLSX.writeFile(workbook, "Historial_Memos_Sanciones.xlsx")
-  }
-
-  const exportToPDF = () => {
-    if (filtered.length === 0) {
-      setMessage("No hay datos para exportar")
-      setMessageType("error")
-      return
-    }
-
-    const doc = new jsPDF()
-
-    doc.text("Historial de Memos y Sanciones", 14, 10)
-
-    const tableRows = filtered.map((p) => ([
-      p.id,
-      p.id_branch?.name_branch,
-      p.id_team?.name || "",
-      p.id_type_pay?.type_p,
-      p.id_cuenta?.banco,
-      p.id_cuenta?.numero_cta,
-      p.id_cuenta?.titular,
-      p.amount,
-      p.detail
-    ]))
-
-    autoTable(doc, {
-      head: [["ID","SUCURSAL", "PERSONAL", "T.PAGO",  "BANCO","N° CUENTA","TITULAR","MONTO","DETALLE"]],
-      body: tableRows,
-      startY: 20
+    setValues({
+      id_type_transaction: String(row.id_type_transaction),
+      id_branch: String(row.id_branch),
+      id_employee: String(row.id_employee),
+      amount: String(row.amount),
+      detail: row.detail || "",
+      id_status: String(row.id_status)
     })
 
-    doc.save("HistorialMemosSanciones.pdf")
+    setOpen(true)
   }
+
+  // 📌 DELETE
+  const handleDelete = (row: MemosWithRelations) => {
+    confirm({
+      title: "Eliminar",
+      message: "¿Seguro que deseas eliminar esta sancion?",
+      confirmText: "Confirmar",
+      onConfirm: async () => {
+        try {
+          await removeMemos(row.id)
+          showToast("Solicitud eliminada ✅", "success")
+        } catch {
+          showToast("Error en proceso", "error")
+        }
+      }
+    })
+  }
+
+  // 📌 EXPORT
+  const handleExcel = () => {
+    exportMemosToExcel(filteredMemos)
+  }
+
+  const handlePDF = () => {
+    const currentUser =
+      profile?.name ||
+      profile?.user ||
+      user?.email ||
+      "Sistema"
+
+    exportMemosToPDF(filteredMemos, currentUser)
+  }
+
+  const columns = getColumnsMemos(handleEdit, handleDelete)
 
   return (
     <div>
 
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl italic font-bold">
-          MEMORANDUMS Y SANCIONES
+      <div className="flex justify-between items-center mb-2">
+
+        <h2 className="text-xl font-bold italic">
+          COBRO DE MEMOS Y SANCIONES 
         </h2>
 
         <div className="flex gap-3">
@@ -372,22 +233,25 @@ const handleExport = (row: any) => {
             onClick={() => {
               setMode("create")
               resetForm()
-              setOpenModal(true)
+              setOpen(true)
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded"
+            className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm"
           >
-            <Plus size={18}/>
-            Nuevo
+            <Plus size={18}/> Nuevo
           </button>
 
-          <button onClick={exportToPDF} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded">
-            <FileText size={18}/>
-            PDF
+          <button
+            onClick={handlePDF}
+            className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded"
+          >
+            <FileText size={18}/> PDF
           </button>
 
-          <button onClick={exportToExcel} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded">
-            <FileSpreadsheet size={18}/>
-            Excel
+          <button
+            onClick={handleExcel}
+            className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded"
+          >
+            <FileSpreadsheet size={18}/> Excel
           </button>
 
         </div>
@@ -396,106 +260,30 @@ const handleExport = (row: any) => {
       {/* BUSCADOR */}
       <input
         type="text"
-        placeholder="Buscar..."
-        className="border px-3 py-2 rounded mb-6 w-full max-w-md"
+        placeholder="Buscar solicitud..."
+        className="border px-3 py-1 rounded mb-4 w-full max-w-md"
         value={search}
-        onChange={(e)=>setSearch(e.target.value)}
+        onChange={(e) => setSearch(e.target.value)}
       />
 
       {/* TABLA */}
-      <MemosTable data={filtered} onView={handleExport} />
+      <DataTable data={filteredMemos} columns={columns} />
 
       {/* MODAL */}
-      {openModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-
-         <div className="bg-white p-6 rounded-lg w-200 border-2 border-black" >
-
-            {message && (
-              <div className={`mb-4 p-2 rounded text-white ${
-                messageType === "error" ? "bg-red-500" : "bg-green-500"
-              }`}>
-                {message}
-              </div>
-            )}
-
-            <h2 className="text-xl font-bold italic mb-3">
-              {mode === "create" && "MEMO - SANCIONES"}
-              {mode === "view" && "DETALLE DE LA SOLICITUD"}
-            </h2>
-
-            <div className="grid grid-cols-2 gap-2">
-
-              <h3 className="text-blue-950 text-lg font-semibold italic">Sucursal</h3>
-              <h3 className="text-blue-950 text-lg font-semibold italic">Personal</h3>             
-
-              <select name="id_branch" value={form.id_branch} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar sucursal</option>
-                {branches.map(b=>(
-                  <option key={b.id} value={b.id}>{b.name_branch}</option>
-                ))}
-              </select>
-
-              {/* 🔹 PERSONAL DEPENDIENTE */}
-              <select name="id_team" value={form.id_team} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar Solicitante</option>
-                {filteredPersonal.map(b=>(
-                  <option key={b.ci} value={b.ci}>{b.name}</option>
-                ))}
-              </select>
-
-              <h3 className="text-blue-950 text-lg font-semibold italic">Tipo de pago</h3>
-              <h3 className="text-blue-950 text-lg font-semibold italic">Banco</h3>
-
-              <select name="id_type_pay" value={form.id_type_pay} onChange={handleChange} disabled={mode==="view"} className="border p-2">
-                <option value="">Seleccionar Tipo de pago</option>
-                {tpago.map(b=>(
-                  <option key={b.id} value={b.id}>{b.type_p}</option>
-                ))}
-              </select>
-
-              {/* 🔹 BANCO DINÁMICO */}
-              <select
-                name="id_cuenta"
-                value={form.id_cuenta}
-                onChange={handleChange}
-                disabled={mode==="view" || !requireBank}
-                className="border p-2"
-              >
-                <option value="">Seleccionar cuenta</option>
-                {cuentas.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.banco} - {c.numero_cta} - {c.titular}
-                  </option>
-                ))}
-              </select>
-
-              <h3 className="text-blue-950 text-lg font-semibold italic">Monto</h3>
-              <h3 className="text-blue-950 text-lg font-semibold italic">Detalle</h3>
-
-              <input name="amount" value={form.amount} onChange={handleChange} disabled={mode==="view"} className="border p-2"/>
-              <input name="detail" value={form.detail} onChange={handleChange} disabled={mode==="view"} className="border p-2"/>
-
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-
-              <button onClick={()=>setOpenModal(false)} className="bg-red-400 text-white px-4 py-2 rounded">
-                Cancelar
-              </button>
-
-              {mode !== "view" && (
-                <button onClick={handleSubmit} className="bg-blue-600 text-white px-4 py-2 rounded">
-                  Guardar
-                </button>
-              )}
-
-            </div>
-
-          </div>
-
-        </div>
-      )}
+      <MemosModal
+        open={open}
+        mode={mode}
+        form={form}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        onClose={() => setOpen(false)}
+        message={message}
+        messageType={messageType}
+        branches={branches}
+        employees={employees}
+        status_transaction={statusTransaction}
+        isPaid={selected?.id_status === 2} // 🔥 CLAVE
+      />
 
     </div>
   )
