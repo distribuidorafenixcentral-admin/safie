@@ -9,6 +9,7 @@ export interface Memos {
   detail: string
   id_status: number // 1 = pendiente, 2 = pagado, 4 = eliminado
   type_pay?: string | null // se llena cuando pasa a pagado
+   confirmed_at?: string | null 
 }
 
 //

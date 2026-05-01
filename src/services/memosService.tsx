@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase"
 import type {
+  Memos,
   MemosInsert,
   MemosUpdate,
   MemosWithRelations
@@ -23,7 +24,9 @@ export const getMemos = async (): Promise<MemosWithRelations[]> => {
     `)
     .eq("id_type_transaction", TYPE_MEMO)
     .neq("id_status", 4)
+    .order("id_status", {ascending: true})
     .order("id", { ascending: false })
+    
 
   if (error) throw error
   return (data as MemosWithRelations[]) || []
@@ -60,7 +63,8 @@ export const createMemo = async (memo: MemosInsert) => {
   const payload = {
     ...memo,
     id_type_transaction: TYPE_MEMO,
-    type_pay: memo.id_status === 2 ? "Efectivo" : null // 🔥 CLAVE
+    type_pay: memo.id_status === 2 ? "Efectivo" : null,
+    confirmed_at: memo.id_status === 2 ? new Date().toISOString() : null 
   }
 
   const { error } = await supabase
@@ -73,15 +77,14 @@ export const createMemo = async (memo: MemosInsert) => {
 //
 // 📌 ACTUALIZAR
 //
-export const updateMemo = async (
-  id: number,
-  data: MemosUpdate
-) => {
-  // 🔥 regla de negocio: si pasa a pagado → asignar type_pay
-  const payload: any = { ...data }
+export const updateMemo = async (id: number, data: any) => {
 
-  if (data.id_status === 2) {
-    payload.type_pay = "Efectivo"
+  const payload = {
+    ...data,
+    ...(data.id_status === 2 && {
+      type_pay: "Efectivo",
+      confirmed_at: new Date().toISOString() // 🔥 CLAVE
+    })
   }
 
   const { error } = await supabase
