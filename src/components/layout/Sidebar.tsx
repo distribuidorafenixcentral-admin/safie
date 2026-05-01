@@ -46,16 +46,14 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
       icon: PhoneCallIcon,
       children: [
         { name: "Pago Servicios", path: "/dashboard/transaccion", permission: PERMISSIONS.CREATE_REGTRANSACTION},
-        { name: "Depósito", path: "/dashboard/regdeposito", permission: PERMISSIONS.CREATE_REGDEPOSIT},
-        { name: "Deuda", path: "/dashboard/regdeuda", permission: PERMISSIONS.CREATE_DEBT},
+        { name: "Depósito", path: "/dashboard/regdeposito", permission: PERMISSIONS.CREATE_REGDEPOSIT}
       ]
     },
     {
       name: "T. Ingresos",
       icon: ArrowLeftRight,
       children: [
-        { name: "Deposito", path: "/dashboard/deposito", permission: PERMISSIONS.DEPOSITS},
-        { name: "Cobro Deuda", path: "/dashboard/deuda", permission: PERMISSIONS.COLLECT_DEBT},
+        { name: "Deposito", path: "/dashboard/deposito", permission: PERMISSIONS.DEPOSITS},       
         { name: "Memos / sanciones", path: "/dashboard/memos", permission: PERMISSIONS.MEMORANDUM}
       ]
     ,},

@@ -2,6 +2,7 @@ import DashboardLayout from "@/layouts/DashboardLayout"
 import StatCard from "@/components/cards/StarCard"
 import { Outlet, useLocation } from "react-router-dom"
 import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase"
 
 import {
   getTotalPersonal,
@@ -10,7 +11,7 @@ import {
   getDepositosHoy,
   getDepositosSemana,
   getDepositosMes,
-  getBalanceHoy,  
+  getBalanceHoy,
   getEfectivo,
   getBanco1,
   getBanco2
@@ -27,35 +28,46 @@ import {
 } from "lucide-react"
 
 export default function Dashboard() {
-
   const location = useLocation()
 
   // 🔹 Estados dashboard
-  const [totalPersonal, setTotalPersonal] = useState(0)
-  const [ingresosHoy, setIngresosHoy] = useState(0)
-  const [gastosHoy, setGastosHoy] = useState(0)
-  const [depositosHoy, setDepositosHoy] = useState(0)
-  const [depositosSemana, setDepositosSemana] = useState(0)
-  const [depositosMes, setDepositosMes] = useState(0)
-  const [balanceHoy, setBalanceHoy] = useState(0)
-  const [efectivoHoy, setEfectivoHoy] = useState(0)
-  const [bancoUno, setBancoUno] = useState(0)
-  const [bancoDos, setBancoDos] = useState(0)
+  const [totalPersonal, setTotalPersonal] = useState<number>(0)
+  const [ingresosHoy, setIngresosHoy] = useState<number>(0)
+  const [gastosHoy, setGastosHoy] = useState<number>(0)
+  const [depositosHoy, setDepositosHoy] = useState<number>(0)
+  const [depositosSemana, setDepositosSemana] = useState<number>(0)
+  const [depositosMes, setDepositosMes] = useState<number>(0)
+  const [balanceHoy, setBalanceHoy] = useState<number>(0)
+  const [efectivoHoy, setEfectivoHoy] = useState<number>(0)
+  const [bancoUno, setBancoUno] = useState<number>(0)
+  const [bancoDos, setBancoDos] = useState<number>(0)
 
-
-  // 🔥 Cargar datos
-  useEffect(() => {
-    const loadData = async () => {
-      const total = await getTotalPersonal()
-      const ingresoshoy = await getIngresosHoy()
-      const gastoshoy = await getGastosHoy()
-      const depositoshoy = await getDepositosHoy()
-      const depositossem = await getDepositosSemana()
-      const depositosmes = await getDepositosMes()
-      const balancehoy = await getBalanceHoy()
-      const efectivohoy = await getEfectivo()
-      const bancouno = await getBanco1()
-      const bancodos = await getBanco2()
+  // 🔥 Función principal para cargar datos
+  const loadData = async () => {
+    try {
+      const [
+        total,
+        ingresoshoy,
+        gastoshoy,
+        depositoshoy,
+        depositossem,
+        depositosmes,
+        balancehoy,
+        efectivohoy,
+        bancouno,
+        bancodos
+      ] = await Promise.all([
+        getTotalPersonal(),
+        getIngresosHoy(),
+        getGastosHoy(),
+        getDepositosHoy(),
+        getDepositosSemana(),
+        getDepositosMes(),
+        getBalanceHoy(),
+        getEfectivo(),
+        getBanco1(),
+        getBanco2()
+      ])
 
       setTotalPersonal(total)
       setIngresosHoy(ingresoshoy)
@@ -67,23 +79,43 @@ export default function Dashboard() {
       setEfectivoHoy(efectivohoy)
       setBancoUno(bancouno)
       setBancoDos(bancodos)
-
-      
+    } catch (error) {
+      console.error("Error cargando dashboard:", error)
     }
+  }
 
+  // 🔥 Realtime con Supabase
+  useEffect(() => {
     loadData()
+
+    const channel = supabase
+      .channel("dashboard-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "transactions",
+        },
+        async () => {
+          await loadData()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const showCards = location.pathname === "/dashboard"
 
   return (
     <DashboardLayout>
-
       {showCards ? (
-        
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-             {/* 📌 INGRESOS GENERALES HOY */}
+          {/* 📌 INGRESOS GENERALES HOY */}
           <StatCard
             title="Ingresos HOY"
             value={`Bs. ${ingresosHoy.toLocaleString()}`}
@@ -92,7 +124,8 @@ export default function Dashboard() {
             iconColor="text-blue-900"
             cardBg="bg-blue-300"
           />
-          {/* 🔹 gastos hoy */}
+
+          {/* 🔹 GASTOS HOY */}
           <StatCard
             title="Gastos HOY"
             value={`Bs. ${gastosHoy.toLocaleString()}`}
@@ -101,7 +134,8 @@ export default function Dashboard() {
             iconColor="text-red-900"
             cardBg="bg-red-300"
           />
-          {/* 🔹 balanace hoy */}
+
+          {/* 🔹 BALANCE */}
           <StatCard
             title="Balance"
             value={`Bs. ${balanceHoy.toLocaleString()}`}
@@ -121,7 +155,7 @@ export default function Dashboard() {
             cardBg="bg-green-300"
           />
 
-
+          {/* 📌 DEPÓSITOS SEMANA */}
           <StatCard
             title="Depósitos SEMANA"
             value={`Bs. ${depositosSemana.toLocaleString()}`}
@@ -131,6 +165,7 @@ export default function Dashboard() {
             cardBg="bg-blue-300"
           />
 
+          {/* 📌 DEPÓSITOS MES */}
           <StatCard
             title="Depósitos MES"
             value={`Bs. ${depositosMes.toLocaleString()}`}
@@ -140,8 +175,7 @@ export default function Dashboard() {
             cardBg="bg-cyan-300"
           />
 
-   
-
+          {/* 📌 EFECTIVO */}
           <StatCard
             title="Efectivo"
             value={`Bs. ${efectivoHoy.toLocaleString()}`}
@@ -151,24 +185,27 @@ export default function Dashboard() {
             cardBg="bg-lime-300"
           />
 
+          {/* 📌 BANCO 1 */}
           <StatCard
             title="Banco 1"
-             value={`Bs. ${bancoUno.toLocaleString()}`}
+            value={`Bs. ${bancoUno.toLocaleString()}`}
             icon={<Building2 size={36} />}
             iconBg="bg-orange-200"
             iconColor="text-orange-900"
             cardBg="bg-orange-300"
           />
-              <StatCard
+
+          {/* 📌 BANCO 2 */}
+          <StatCard
             title="Banco 2"
-             value={`Bs. ${bancoDos.toLocaleString()}`}
+            value={`Bs. ${bancoDos.toLocaleString()}`}
             icon={<Building2 size={36} />}
             iconBg="bg-green-300"
             iconColor="text-green-950"
             cardBg="bg-green-400"
           />
 
-                 {/* 📌 PERSONAL */}
+          {/* 📌 PERSONAL */}
           <StatCard
             title="Personal"
             value={totalPersonal.toString()}
@@ -177,13 +214,10 @@ export default function Dashboard() {
             iconColor="text-purple-900"
             cardBg="bg-purple-300"
           />
-
         </div>
-
       ) : (
         <Outlet />
       )}
-
     </DashboardLayout>
   )
 }
