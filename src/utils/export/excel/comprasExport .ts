@@ -12,6 +12,8 @@ export const exportComprasToExcel = (filteredCompras: CompraWithRelations[]) => 
     id_employee: item.employees?.name || "",
     amount: item.amount,
     detail: item.detail,   
+    type_pay: item.type_pay || "",
+    id_cuenta: item.cuentas?.numero_cta 
   }))
 
   exportToExcel({
@@ -25,7 +27,9 @@ export const exportComprasToExcel = (filteredCompras: CompraWithRelations[]) => 
       { key: "id_branch", label: "SUCURSAL" },
       { key: "id_employee", label: "EMPLEADO" },
       { key: "amount", label: "MONTO" },
-      { key: "detail", label: "DETALLE" }
+      { key: "detail", label: "DETALLE" },
+      { key: "type_pay", label: "TIPO DE PAGO" },
+      { key: "id_cuenta", label: "CUENTA" }
     ]
   })
 }

@@ -7,6 +7,11 @@ import { DataTable } from "@/components/common/DataTable"
 import { getColumnsCompras } from "@/components/transactions/columnsCompras"
 import CompraModal from "@/components/transactions/ComprasModal"
 
+// 🔹 Export
+import { exportComprasToExcel } from "@/utils/export/excel/comprasExport "
+import { exportComprasToPDF } from "@/utils/export/pdf/comprasExportpdf"
+import { useAuth } from "@/context/AuthContext"
+
 import { useToast } from "@/context/ToastContext"
 
 import { Plus, FileText, FileSpreadsheet } from "lucide-react"
@@ -26,6 +31,7 @@ export default function Compras() {
 
   const [search, setSearch] = useState("")
   const toast = useToast()
+   const { profile, user } = useAuth()
 
   const { filteredCompra, addCompra } = useCompras(search)
 
@@ -122,12 +128,31 @@ export default function Compras() {
     }
   }
 
+    // 📌 Exportaciones
+    const handleExcel = () => {
+      exportComprasToExcel(filteredCompra)
+    }
+  
+    const handlePDF = () => {
+      const currentUser =
+        profile?.name ||
+        profile?.user ||
+        user?.email ||
+        "Sistema"
+  
+      exportComprasToPDF(
+        filteredCompra,
+        currentUser
+      )
+    }
+  
+
   const columns = getColumnsCompras(handleView)
 
   return (
     
     <div>
- <div>HOLA COMPRAS</div>
+
       <div className="flex justify-between items-center mb-4">
 
         <h2 className="text-xl font-bold italic">
@@ -147,11 +172,15 @@ export default function Compras() {
             <Plus size={18} /> Nuevo
           </button>
 
-          <button className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded">
+          <button 
+            onClick={handlePDF}
+            className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded">
             <FileText size={18} /> PDF
           </button>
 
-          <button className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded">
+          <button 
+            onClick={handleExcel}
+            className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded">
             <FileSpreadsheet size={18} /> Excel
           </button>
 
