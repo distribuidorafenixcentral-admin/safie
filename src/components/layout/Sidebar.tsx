@@ -62,9 +62,7 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
       icon: ArrowLeftRight,
       children: [  
         { name: "Pago Comisiones", path: "/dashboard/comisiones", permission: PERMISSIONS.PAGO_COMISION },
-        { name: "Pago Sueldos", path: "/dashboard/sueldos", permission: PERMISSIONS.PAGO_SUELDO},
-        { name: "Pago Servicios", path: "/dashboard/servicios", permission: PERMISSIONS.PAGO_SERVICIOS },
-        { name: "Pago Alquileres", path: "/dashboard/alquileres", permission: PERMISSIONS.PAGO_ALQUILER},
+        { name: "Pago Solicitudes pendientes", path: "/dashboard/pagossol", permission: PERMISSIONS.PAGO_SUELDO},
         { name: "Compras varias", path: "/dashboard/compras", permission: PERMISSIONS.PAGO_COMPRAS},
         { name: "Devoluciones", path: "/dashboard/devoluciones", permission: PERMISSIONS.DEVOLUCIONES},
       ]
