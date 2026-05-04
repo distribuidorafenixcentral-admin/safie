@@ -65,9 +65,7 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
         { name: "Pago Sueldos", path: "/dashboard/sueldos", permission: PERMISSIONS.PAGO_SUELDO},
         { name: "Pago Servicios", path: "/dashboard/servicios", permission: PERMISSIONS.PAGO_SERVICIOS },
         { name: "Pago Alquileres", path: "/dashboard/alquileres", permission: PERMISSIONS.PAGO_ALQUILER},
-        { name: "Material de escritorio", path: "/dashboard/matescritorio", permission: PERMISSIONS.PAGO_MATESCRITORIO},
-        { name: "Material de limpieza", path: "/dashboard/matlimpieza", permission: PERMISSIONS.PAGO_MATLIMPIEZA},
-        { name: "Compras varias", path: "/dashboard/varios", permission: PERMISSIONS.PAGO_COMPRAS},
+        { name: "Compras varias", path: "/dashboard/compras", permission: PERMISSIONS.PAGO_COMPRAS},
         { name: "Devoluciones", path: "/dashboard/devoluciones", permission: PERMISSIONS.DEVOLUCIONES},
       ]
     },
