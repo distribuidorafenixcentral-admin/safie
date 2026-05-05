@@ -14,6 +14,7 @@ import Memos from "./pages/memos/Memos"
 import Compras from "./pages/compras/Compras"
 import Pagossol from "./pages/pagossol/Pagossol"
 import Comisiones from "./pages/comision/Comision"
+import Restitutions from "./pages/restitutions/Restitutions"
 import { ConfirmProvider } from "./context/ConfirmContext"
 import { ToastProvider } from "./context/ToastContext"
 import { AuthProvider, useAuth } from "./context/AuthContext"
@@ -58,6 +59,7 @@ function AppRoutes() {
         <Route path="comisiones" element={<Comisiones />} />
         <Route path="pagossol" element={<Pagossol />} />
         <Route path="compras" element={<Compras />} />
+        <Route path="restitutions" element={<Restitutions/>} />
 
 
       </Route>

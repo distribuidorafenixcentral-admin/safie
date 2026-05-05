@@ -64,7 +64,7 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
         { name: "Pago Comisiones", path: "/dashboard/comisiones", permission: PERMISSIONS.PAGO_COMISION },
         { name: "Pago Solicitudes pendientes", path: "/dashboard/pagossol", permission: PERMISSIONS.PAGO_SUELDO},
         { name: "Compras varias", path: "/dashboard/compras", permission: PERMISSIONS.PAGO_COMPRAS},
-        { name: "Devoluciones", path: "/dashboard/devoluciones", permission: PERMISSIONS.DEVOLUCIONES},
+        { name: "Restituciones", path: "/dashboard/restitutions", permission: PERMISSIONS.DEVOLUCIONES},
       ]
     },
     {
