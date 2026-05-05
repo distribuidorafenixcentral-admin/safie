@@ -33,7 +33,7 @@ export default function Navbar() {
       if (!user) return
 
       const { data } = await supabase
-        .from("team")
+        .from("employees")
         .select(`
           name,
           user,

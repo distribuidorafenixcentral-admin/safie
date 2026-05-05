@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
 
       const { data, error } = await supabase
-        .from("team")
+        .from("employees")
         .select(`
           *,
           role (
