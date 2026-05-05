@@ -11,12 +11,12 @@ export const exportEmployeesToPDF = (
   if (!employees || employees.length === 0) return
 
   exportToPDF({
-    title: "REPORTE DE EMPLEADOS",
-    fileName: "Empleados",
+    title: "LISTA DEL PERSONAL",
+    fileName: "Listado_Personal",
     user,
  
 
-    headers: ["ID", "NOMBRE", "CÉDULA", "CELULAR", "REFERENCIA", "CIUDAD"],
+    headers: ["ID", "NOMBRE", "CÉDULA", "CELULAR", "REFERENCIA", "TELEFONO DE REFERENCIA"],
 
    body: employees.map((employee, index) => [
       index + 1,

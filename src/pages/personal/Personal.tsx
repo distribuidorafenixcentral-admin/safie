@@ -70,9 +70,7 @@ export default function Employees() {
       id_branch: "",
       id_role: "",
       reference: "",
-      celphone_ref: "",
-      email: "",
-      password: ""
+      celphone_ref: ""
     }
   })
 
@@ -130,9 +128,7 @@ export default function Employees() {
             status: 3,
             user_id: null,
             username: null
-          },
-          form.email,
-          form.password
+          }
         )
 
         setMessage("Registrado correctamente")
@@ -182,10 +178,7 @@ export default function Employees() {
       id_role: row.id_role ? String(row.id_role) : "",
 
       reference: row.reference || "",
-      celphone_ref: row.celphone_ref || "",
-
-      email: "",
-      password: ""
+      celphone_ref: row.celphone_ref || ""
     })
 
     setOpen(true)

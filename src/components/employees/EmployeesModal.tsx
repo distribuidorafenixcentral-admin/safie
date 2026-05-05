@@ -62,6 +62,7 @@ export default function EmployeeModal(props: Props) {
               disabled={props.mode !== "create"}
               className="border p-1 rounded-sm pl-2 disabled:bg-gray-200"
               placeholder="000000"
+              autoFocus={props.mode === "create"}
             />
           </div>
 
@@ -72,9 +73,10 @@ export default function EmployeeModal(props: Props) {
             </label>
             <input
               name="name"
+              disabled={props.mode !== "create"}
               value={props.form.name}
               onChange={props.onChange}
-              className="border p-1 rounded-sm pl-2"
+              className="border p-1 rounded-sm pl-2 disabled:bg-gray-200"
               placeholder="Juan Pérez"
             />
           </div>
@@ -89,6 +91,7 @@ export default function EmployeeModal(props: Props) {
               value={props.form.celphone}
               onChange={props.onChange}
               className="border p-1 rounded-sm pl-2"
+              autoFocus={props.mode !== "create"}
             />
           </div>
 
@@ -107,34 +110,43 @@ export default function EmployeeModal(props: Props) {
           </div>
 
          {/* Sucursal */}
-<select
-  name="id_branch"
-  value={props.form.id_branch || ""}
-  onChange={props.onChange}
-  className="border p-1 rounded-sm pl-2"
->
-  <option value="">Seleccione</option>
-  {props.branches.map(b => (
-    <option key={b.id} value={String(b.id)}>
-      {b.name_branch}
-    </option>
-  ))}
-</select>
-
-{/* Rol */}
-<select
-  name="id_role"
-  value={props.form.id_role || ""}
-  onChange={props.onChange}
-  className="border p-1 rounded-sm pl-2"
->
-  <option value="">Seleccione</option>
-  {props.roles.map(r => (
-    <option key={r.id} value={String(r.id)}>
-      {r.role}
-    </option>
-  ))}
-</select>
+          <div className="flex flex-col gap-1">
+          <label className="text-sm font-semibold italic">
+              Sucursal
+            </label>
+          <select
+            name="id_branch"
+            value={props.form.id_branch || ""}
+            onChange={props.onChange}
+            className="border p-1 rounded-sm pl-2"
+          >
+            <option value="">Seleccione la sucursal</option>
+            {props.branches.map(b => (
+              <option key={b.id} value={String(b.id)}>
+                {b.name_branch}
+              </option>
+            ))}
+          </select>
+</div>
+          {/* Rol */}
+            <div className="flex flex-col gap-1">
+           <label className="text-sm font-semibold italic">
+              Cargo
+            </label>
+          <select
+            name="id_role"
+            value={props.form.id_role || ""}
+            onChange={props.onChange}
+            className="border p-1 rounded-sm pl-2"
+          >
+            <option value="">Seleccione el cargo</option>
+            {props.roles.map(r => (
+              <option key={r.id} value={String(r.id)}>
+                {r.role}
+              </option>
+            ))}
+          </select>
+          </div>
 
           {/* Referencia */}
           <div className="flex flex-col gap-1">
@@ -162,35 +174,7 @@ export default function EmployeeModal(props: Props) {
             />
           </div>
 
-          {/* 🔐 SOLO EN CREATE */}
-          {props.mode === "create" && (
-            <>
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-semibold italic">
-                  Email
-                </label>
-                <input
-                  name="email"
-                  value={props.form.email}
-                  onChange={props.onChange}
-                  className="border p-1 rounded-sm pl-2"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-semibold italic">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={props.form.password}
-                  onChange={props.onChange}
-                  className="border p-1 rounded-sm pl-2"
-                />
-              </div>
-            </>
-          )}
+      
         </div>
 
         {/* BOTONES */}

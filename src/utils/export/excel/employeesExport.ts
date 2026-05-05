@@ -18,9 +18,9 @@ export const exportEmployeesToExcel = (filteredEmployees: Employee[]) => {
 
   exportToExcel({
     data,
-    fileName: "Empleados",
-    sheetName: "Empleados",
-    title: "REPORTE DE EMPLEADOS",
+    fileName: "Listado_Personal",
+    sheetName: "listado_personal",
+    title: "LISTA DEL PERSONAL",
     headers: [
       { key: "index", label: "N°" },
       { key: "name", label: "NOMBRE" },

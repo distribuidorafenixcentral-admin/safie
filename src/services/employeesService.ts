@@ -16,7 +16,7 @@ export const getEmployees = async (): Promise<EmployeeWithRelations[]> => {
       branch:branches(id, name_branch),
       role:role(id, role)
     `)
-    .order("id", { ascending: true })
+    .order("id", { ascending: false })
 
   if (error) throw new Error(error.message)
 
@@ -43,53 +43,17 @@ export const getEmployeeById = async (
 
 // 🔥 🔥 🔥 CORREGIDO AQUÍ 🔥 🔥 🔥
 // Crear empleado + usuario (frontend seguro)
-export const createEmployeeWithAuth = async (
-  employee: EmployeeInsert,
-  email: string,
-  password: string
-): Promise<Employee> => {
-    console.log("📤 Enviando datos:", { email, password }) // 👈 AQUÍ
-
-  // 1️⃣ Registrar usuario (FRONTEND)
-  const { data: authData, error: authError } =
-    await supabase.auth.signUp({
-      email,
-      password
-    })
-     console.log("📥 RESPUESTA AUTH:", authData)
-  console.log("❌ ERROR AUTH:", authError)
-
-  if (authError) {
-    throw new Error(authError.message)
-  }
-
-  const userId = authData.user?.id
-
-  if (!userId) {
-    throw new Error("No se pudo crear el usuario")
-  }
-
-  // ⚠️ IMPORTANTE:
-  // signUp cambia la sesión → evitamos romper el flujo
-  await supabase.auth.signOut()
-
-  // 2️⃣ Insertar empleado
+export const createEmployee = async (employee: EmployeeInsert) => {
   const { data, error } = await supabase
     .from("employees")
-    .insert({
-      ...employee,
-      user_id: userId
-    })
+    .insert(employee)
     .select()
     .single()
 
-  if (error) {
-    throw new Error(error.message)
-  }
+  if (error) throw error
 
-  return data as Employee
+  return data
 }
-
 // 🔹 Actualizar empleado
 export const updateEmployee = async (
   id: number,

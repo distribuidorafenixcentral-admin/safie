@@ -8,7 +8,7 @@ import type {
 
 import {
   getEmployees,
-  createEmployeeWithAuth,
+  createEmployee,
   updateEmployee,
   deactivateEmployee
 } from "@/services/employeesService"
@@ -29,34 +29,14 @@ export const useEmployees = (search: string) => {
     fetchEmployees()
   }, [fetchEmployees])
 
-  // 🔴 Realtime (escucha cambios en BD)
-  useRealtimeTable("employees", (payload: any) => {
-
-    // INSERT
-    if (payload.eventType === "INSERT" && payload.new) {
-      // puedes filtrar por status si quieres ocultar inactivos
-      if (payload.new.status !== 0) {
-        setEmployees(prev => [payload.new, ...prev])
-      }
-    }
-
-    // UPDATE
-    if (payload.eventType === "UPDATE") {
-
-      // si se desactiva → lo quitamos
-      if (payload.new.status === 0) {
-        setEmployees(prev => prev.filter(e => e.id !== payload.new.id))
-        return
-      }
-
-      setEmployees(prev =>
-        prev.map(e => e.id === payload.new.id ? payload.new : e)
-      )
-    }
-
-    // DELETE (poco común si usas soft delete)
-    if (payload.eventType === "DELETE") {
-      setEmployees(prev => prev.filter(e => e.id !== payload.old.id))
+  // 🔴 Realtime (simplificado y estable)
+  useRealtimeTable("employees", async (payload: any) => {
+    if (
+      payload.eventType === "INSERT" ||
+      payload.eventType === "UPDATE" ||
+      payload.eventType === "DELETE"
+    ) {
+      await fetchEmployees()
     }
   })
 
@@ -72,46 +52,24 @@ export const useEmployees = (search: string) => {
     )
   }, [employees, search])
 
-  // ➕ Crear empleado con usuario
-  const addEmployee = async (
-    employee: EmployeeInsert,
-    email: string,
-    password: string
-  ) => {
-    const newEmployee = await createEmployeeWithAuth(
-      employee,
-      email,
-      password
-    )
-
-    // opcional: puedes comentar esto si usas realtime
-    setEmployees(prev => [newEmployee, ...prev])
-
+  // ➕ Crear empleado (sin set manual, lo maneja realtime)
+  const addEmployee = async (employee: EmployeeInsert) => {
+    const newEmployee = await createEmployee(employee)
     return newEmployee
   }
 
-  // ✏️ Editar
+  // ✏️ Editar (sin set manual)
   const editEmployee = async (
     id: number,
     updates: EmployeeUpdate
   ) => {
     const updated = await updateEmployee(id, updates)
-
-    setEmployees(prev =>
-      prev.map(e => e.id === id ? { ...e, ...updated } : e)
-    )
-
     return updated
   }
 
-  // ❌ Desactivar (soft delete)
+  // ❌ Desactivar (sin set manual)
   const removeEmployee = async (id: number) => {
     const updated = await deactivateEmployee(id)
-
-    setEmployees(prev =>
-      prev.filter(e => e.id !== id)
-    )
-
     return updated
   }
 
