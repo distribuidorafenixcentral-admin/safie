@@ -150,7 +150,7 @@ export default function VehiculoModal(props: Props) {
               className="border p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-600 pl-2 italic 
               disabled:font-bold disabled:bg-gray-200 disabled:text-gray-700 disabled:cursor-not-allowed"
               placeholder="35000"
-              autoFocus={props.mode === "create"} 
+             
             />
           </div>
 
