@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-table"
 
 // Tabla genérica
-export function DataTable({ data, columns, pageSize = 5 }: any) {
+export function DataTable({ data, columns, pageSize = 10 }: any) {
 
   const table = useReactTable({
     data,

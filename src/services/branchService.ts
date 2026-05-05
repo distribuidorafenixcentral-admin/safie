@@ -8,7 +8,7 @@ export const getBranches = async (): Promise<Branch[]> => {
     .select("*")
     .neq("id", 1)       // excluir registro de Oficina Central
     .neq("status", 2)   // excluir registros inactivos (soft delete)
-    .order("id", { ascending: false })
+    .order("id", { ascending: true })
 
   if (error) throw error
   return data || []
@@ -58,7 +58,7 @@ export const updateBranch = async (id: number, data: Partial<Branch>) => {
 export const deleteBranch = async (id: number) => {
   const { error } = await supabase
     .from("branches")
-    .update({ status: 2 })
+    .update({ status: 2 }) // estado inactivo 
     .eq("id", id)
 
   if (error) throw error
