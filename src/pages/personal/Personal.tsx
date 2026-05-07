@@ -126,8 +126,7 @@ export default function Employees() {
             celphone_ref: form.celphone_ref || null,
 
             status: 3,
-            user_id: null,
-            username: null
+            
           }
         )
 

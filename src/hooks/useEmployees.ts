@@ -45,7 +45,6 @@ export const useEmployees = (search: string) => {
     return employees.filter(e =>
       (e.name ?? "").toLowerCase().includes(search.toLowerCase()) ||
       e.ci.toLowerCase().includes(search.toLowerCase()) ||
-      (e.username ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (e.reference ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (e.branch?.name_branch ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (e.role?.role ?? "").toLowerCase().includes(search.toLowerCase())

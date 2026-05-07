@@ -15,9 +15,6 @@ export interface Employee {
 
   reference: string | null
   celphone_ref: string | null
-
-  user_id: string | null
-  username: string | null
 }
 
 // 🟢 PARA INSERTAR (🔥 CORREGIDO)
@@ -35,8 +32,6 @@ export interface EmployeeInsert {
   reference?: string | null
   celphone_ref?: string | null
 
-  user_id?: string | null   // 🔥 opcional
-  username?: string | null  // 🔥 opcional
 }
 
 // 🟡 PARA ACTUALIZAR
