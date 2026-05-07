@@ -205,6 +205,17 @@ export default function Dashboard() {
             cardBg="bg-green-400"
           />
 
+          
+          {/* 💵 RESTITUTCIONES */}
+          <StatCard
+            title="Restituciones"
+            value="Bs. 0"
+            icon={<DollarSign size={36} />}
+            iconBg="bg-red-400"
+            iconColor="text-red-950"
+            cardBg="bg-red-500"
+          />
+
           {/* 📌 PERSONAL */}
           <StatCard
             title="Personal"

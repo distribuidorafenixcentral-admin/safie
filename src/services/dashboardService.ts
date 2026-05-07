@@ -2,7 +2,7 @@
 
 import { supabase } from "@/lib/supabase"
 
-// 🔥 STATUS REALES
+// CONSTANTES PARA FILTRAR INFORMACION EN CONSULTAS
 const STATUS_CONFIRMADO = 2
 const TYPE_DEPOSITO = 8
 
