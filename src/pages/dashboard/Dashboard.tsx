@@ -12,9 +12,10 @@ import {
   getDepositosSemana,
   getDepositosMes,
   getBalanceHoy,
-  getEfectivo,
-  getBanco1,
-  getBanco2
+  getEfectivoMes,
+  getBanco1Mes,
+  getBanco2Mes,
+  getRestitucionMes
 } from "@/services/dashboardService"
 
 import {
@@ -41,6 +42,7 @@ export default function Dashboard() {
   const [efectivoHoy, setEfectivoHoy] = useState<number>(0)
   const [bancoUno, setBancoUno] = useState<number>(0)
   const [bancoDos, setBancoDos] = useState<number>(0)
+  const [restitucionesMes, setRestitucionesMes] = useState<number>(0)
 
   // 🔥 Función principal para cargar datos
   const loadData = async () => {
@@ -55,7 +57,8 @@ export default function Dashboard() {
         balancehoy,
         efectivohoy,
         bancouno,
-        bancodos
+        bancodos,
+        restitucionesmes
       ] = await Promise.all([
         getTotalPersonal(),
         getIngresosHoy(),
@@ -64,9 +67,10 @@ export default function Dashboard() {
         getDepositosSemana(),
         getDepositosMes(),
         getBalanceHoy(),
-        getEfectivo(),
-        getBanco1(),
-        getBanco2()
+        getEfectivoMes(),
+        getBanco1Mes(),
+        getBanco2Mes(),
+        getRestitucionMes()
       ])
 
       setTotalPersonal(total)
@@ -79,6 +83,7 @@ export default function Dashboard() {
       setEfectivoHoy(efectivohoy)
       setBancoUno(bancouno)
       setBancoDos(bancodos)
+      setRestitucionesMes(restitucionesmes)
     } catch (error) {
       console.error("Error cargando dashboard:", error)
     }
@@ -209,7 +214,7 @@ export default function Dashboard() {
           {/* 💵 RESTITUTCIONES */}
           <StatCard
             title="Restituciones"
-            value="Bs. 0"
+            value={`Bs. ${restitucionesMes.toLocaleString()}`}
             icon={<DollarSign size={36} />}
             iconBg="bg-red-400"
             iconColor="text-red-950"
