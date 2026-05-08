@@ -73,7 +73,7 @@ export default function Sucursal() {
   const handleSubmit = async () => {
 
     if (!form.name_branch || !form.adress_branch) {
-      setMessage("Todos los campos son obligatorios")
+      setMessage("Registre todos los campos, son obligatorios")
       setMessageType("error")
       return
     }
@@ -84,7 +84,7 @@ export default function Sucursal() {
         const result = await checkDuplicateBranch(form.name_branch)
 
         if (result.exists) {
-          setMessage("El nombre ya existe")
+          setMessage("La sucursal ya existe, consulte su estado con soporte técnico")
           setMessageType("error")
           return
         }
@@ -95,7 +95,7 @@ export default function Sucursal() {
         }
 
         await createBranch(form)
-        setMessage("Guardado correctamente")
+        setMessage("Sucursal registrada con éxito")
       }
 
       if (mode === "edit" && selected) {
@@ -115,7 +115,7 @@ export default function Sucursal() {
         setSelected(null)
         setMode("create")
         setMessage("")
-      }, 1200)
+      }, 2200)
 
     } catch {
       setMessage("Error en proceso")

@@ -8,12 +8,14 @@ type Profile = {
   name: string
   user_id: string
   id_role: number
+  id_branch: number | null 
   role: {
     role: string
     code: Role
   } | null
   roleName: Role | null
   user: string
+  branches: { name_branch: string } | null 
 }
 
 type AuthContextType = {
@@ -68,6 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const getProfile = async () => {
       setLoading(true)
 
+      // El asterisco (*) ya recupera el campo 'id_branch' de la tabla 'employees'
       const { data, error } = await supabase
         .from("employees")
         .select(`
@@ -89,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           : data.role
 
         setProfile({
-          ...data,
+          ...data, // 👈 2. Aquí ya se inyecta automáticamente el id_branch proveniente de data
           role: roleData,
           roleName: roleData?.code as Role || null
         })

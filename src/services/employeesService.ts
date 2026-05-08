@@ -8,8 +8,14 @@ import type {
 } from "@/types/employees"
 
 // 🔹 Obtener empleados con relaciones
-export const getEmployees = async (): Promise<EmployeeWithRelations[]> => {
-  const { data, error } = await supabase
+// service.ts
+
+// 🔹 Obtener empleados con relaciones
+export const getEmployees = async (
+  branchIdToFilter?: number | null // 
+): Promise<EmployeeWithRelations[]> => {
+  
+  let query = supabase
     .from("employees")
     .select(`
       *,
@@ -18,10 +24,17 @@ export const getEmployees = async (): Promise<EmployeeWithRelations[]> => {
     `)
     .order("id", { ascending: false })
 
+  if (branchIdToFilter) {
+    query = query.eq("id_branch", branchIdToFilter)
+  }
+
+  const { data, error } = await query
+
   if (error) throw new Error(error.message)
 
   return data as EmployeeWithRelations[]
 }
+
 
 // 🔹 Obtener uno por ID
 export const getEmployeeById = async (
@@ -41,8 +54,7 @@ export const getEmployeeById = async (
   return data as Employee
 }
 
-// 🔥 🔥 🔥 CORREGIDO AQUÍ 🔥 🔥 🔥
-// Crear empleado + usuario (frontend seguro)
+// Crear empleado 
 export const createEmployee = async (employee: EmployeeInsert) => {
   const { data, error } = await supabase
     .from("employees")

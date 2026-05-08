@@ -36,6 +36,7 @@ export default function Login() {
           placeholder="Email"
           className="w-full border p-2 mb-4 rounded"
           onChange={(e) => setEmail(e.target.value)}
+          autoFocus
         />
 
         <input
