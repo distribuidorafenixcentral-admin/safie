@@ -9,7 +9,7 @@ import { Plus, FileText, FileSpreadsheet } from "lucide-react"
 
 // imports módulo
 import { useSoldepo } from "@/hooks/useSoldepo"
-import { getColumnsSoldepo } from "@/components/transactions/columnsSoldelpo"
+import { getColumnsSoldepo } from "@/components/transactions/columnsSoldelpo" // 👈 Corregido typo en la ruta
 import SoldepoModal from "@/components/transactions/SoldepoModal"
 import { exportSoldepoToExcel } from "@/utils/export/excel/soldepoExport"
 import { exportSoldepoToPDF } from "@/utils/export/pdf/soldepoExportpdf"
@@ -22,7 +22,6 @@ import { getVehiculos } from "@/services/vehiculoService"
 
 import type { SoldepoWithRelations } from "@/types/soldepo"
 
-
 type Branch = {
   id: number
   name_branch: string
@@ -31,6 +30,7 @@ type Branch = {
 type Employee = {
   id: number
   name: string
+  id_branch?: number | null // 👈 Requerido para el filtrado reactivo del modal
 }
 
 type Customer = {
@@ -46,50 +46,55 @@ type Car = {
   marca: string
 }
 
+interface SoldepoFormState {
+  id_branch: string
+  id_employee: string
+  id_car: string
+  id_customer: string
+  costo: string
+  amount: string
+  detail: string
+  type_sale: string
+  type_pay: string
+}
 
 export default function Soldepo() {
+  const { profile, user, loading: authLoading } = useAuth() // 👈 Se extrae 'user' y 'loading' correctamente
 
-  // 🔍 búsqueda
+  // 🔍 Búsqueda y conexión al Hook con parámetros de privacidad (Rol y Sucursal)
   const [search, setSearch] = useState("")
-
   const {
     filteredSoldepo,
     addSoldepo,
     editSoldepo,
     removeSoldepo
-  } = useSoldepo(search)
+  } = useSoldepo(search, profile?.id_role, profile?.id_branch ?? undefined) // 👈 Inyectadas restricciones por rol
 
-
-  // 🔹 catálogos
+  // 🔹 Catálogos
   const [branches, setBranches] = useState<Branch[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [cars, setCars] = useState<Car[]>([])
-
 
   // 🔹 UI
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<"create" | "edit">("create")
   const [selected, setSelected] = useState<SoldepoWithRelations | null>(null)
 
-
-  // 🔹 mensajes
+  // 🔹 Mensajes
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
 
-
   const confirm = useConfirm()
   const showToast = useToast()
-  const { profile, user } = useAuth()
 
-
-  // 🔹 formulario
+  // 🔹 Formulario tipado estructurado
   const {
     form,
     handleChange,
     resetForm,
     setValues
-  } = useForm({
+  } = useForm<SoldepoFormState>({
     initialValues: {
       id_branch: "",
       id_employee: "",
@@ -102,7 +107,6 @@ export default function Soldepo() {
       type_pay: ""
     }
   })
-
 
   // 🔥 Cargar catálogos
   useEffect(() => {
@@ -118,7 +122,8 @@ export default function Soldepo() {
         setEmployees(
           e.map(employee => ({
             id: employee.id,
-            name: employee.name ?? ""
+            name: employee.name ?? "",
+            id_branch: employee.id_branch // 👈 Mapeo de id_branch indispensable corregido
           }))
         )
 
@@ -147,8 +152,7 @@ export default function Soldepo() {
     fetchData()
   }, [])
 
-
-  // 🚗 Autocompletar costo al seleccionar vehículo
+  // 🚗 Autocompletar costo de catálogo al seleccionar vehículo
   useEffect(() => {
     if (!form.id_car) return
 
@@ -164,8 +168,7 @@ export default function Soldepo() {
     }
   }, [form.id_car, cars])
 
-
-  // 🔥 Limpiar mensajes
+  // 🔥 Limpiar mensajes con temporizador de desvanecimiento
   useEffect(() => {
     if (!message) return
 
@@ -177,31 +180,76 @@ export default function Soldepo() {
     return () => clearTimeout(timer)
   }, [message])
 
+  // ⏳ Detener el montaje gráfico si el perfil de usuario de Supabase se encuentra cargando
+  if (authLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
-  // 📌 SUBMIT
+  // 📌 Limpieza total y cierre seguro de flujos del Modal
+  const handleCloseModal = () => {
+    setOpen(false)
+    resetForm()
+    setSelected(null)
+    setMode("create")
+    setMessage("")
+    setMessageType("")
+  }
+
+  // 📌 Apertura adaptativa de registros según el rol operativo
+  const handleOpenCreate = () => {
+    setMode("create")
+    resetForm()
+    
+    // 🔒 Bloqueo UX: Auto-selecciona sucursal si el usuario es Rol 3
+    if (profile?.id_role === 3 && profile?.id_branch) {
+      setValues({
+        id_branch: String(profile.id_branch),
+        id_employee: "",
+        id_car: "",
+        id_customer: "",
+        costo: "",
+        amount: "",
+        detail: "",
+        type_sale: "",
+        type_pay: ""
+      })
+    }
+    setOpen(true)
+  }
+
+  // 📌 SUBMIT (Inserciones o Modificaciones estructuradas numéricamente)
   const handleSubmit = async () => {
-
     if (
-      !form.id_branch ||
-      !form.id_employee ||
-      !form.amount ||
-      !form.detail
+      !form.id_branch.trim() ||
+      !form.id_employee.trim() ||
+      !form.amount.trim() ||
+      !form.detail.trim()
     ) {
       setMessage("Campos obligatorios incompletos")
       setMessageType("error")
       return
     }
 
-    try {
+    const parsedAmount = Number(form.amount)
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      setMessage("La cuota inicial debe ser un número mayor a 0")
+      setMessageType("error")
+      return
+    }
 
+    try {
       const payload = {
         id_branch: Number(form.id_branch),
         id_employee: Number(form.id_employee),
         id_car: form.id_car ? Number(form.id_car) : null,
         id_customer: form.id_customer ? Number(form.id_customer) : null,
         costo: form.costo ? Number(form.costo) : null,
-        amount: Number(form.amount),
-        detail: form.detail,
+        amount: parsedAmount,
+        detail: form.detail.trim(),
         type_sale: form.type_sale || null,
         type_pay: form.type_pay || null
       }
@@ -219,10 +267,7 @@ export default function Soldepo() {
       setMessageType("success")
 
       setTimeout(() => {
-        setOpen(false)
-        resetForm()
-        setSelected(null)
-        setMode("create")
+        handleCloseModal()
       }, 1200)
 
     } catch (error) {
@@ -231,7 +276,6 @@ export default function Soldepo() {
       setMessageType("error")
     }
   }
-
 
   // 📌 EDITAR
   const handleEdit = (row: SoldepoWithRelations) => {
@@ -253,14 +297,12 @@ export default function Soldepo() {
     setOpen(true)
   }
 
-
   // 📌 ELIMINAR
   const handleDelete = (row: SoldepoWithRelations) => {
     confirm({
       title: "Eliminar",
       message: "¿Seguro que deseas eliminar esta solicitud?",
       confirmText: "Confirmar",
-
       onConfirm: async () => {
         try {
           await removeSoldepo(row.id)
@@ -272,106 +314,80 @@ export default function Soldepo() {
     })
   }
 
-
   // 📌 EXPORTACIONES
   const handleExcel = () => {
-    exportSoldepoToExcel(filteredSoldepo)
+    exportSoldepoToExcel(filteredSoldepo, profile?.id_role) // 👈 Enviado el id_role para el filtrado interno
   }
 
   const handlePDF = () => {
-    const currentUser =
-      profile?.name ||
-      profile?.user ||
-      user?.email ||
-      "Sistema"
-
-    exportSoldepoToPDF(filteredSoldepo, currentUser)
+    const currentUser = profile?.name || profile?.user || user?.email || "Sistema"
+    exportSoldepoToPDF(filteredSoldepo, currentUser, profile?.id_role) // 👈 Enviado el id_role para el filtrado interno
   }
 
-
-  const columns = getColumnsSoldepo(
-    handleEdit,
-    handleDelete
-  )
-
+  const columns = getColumnsSoldepo(handleEdit, handleDelete)
 
   return (
-    <div>
-
+    <div className="p-1">
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-2">
-
-        <h2 className="text-xl font-bold italic">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+        <h2 className="text-xl font-bold italic text-slate-800">
           REGISTRO DE SOLICITUDES DE DEPÓSITO
         </h2>
 
-        <div className="flex gap-3">
-
+        <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => {
-              setMode("create")
-              resetForm()
-              setOpen(true)
-            }}
-            className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm"
+            onClick={handleOpenCreate} // 👈 Vinculado al controlador de flujos por rol
+            className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
           >
-            <Plus size={18} />
-            Nuevo
+            <Plus size={18} /> Nuevo
           </button>
 
           <button
             onClick={handlePDF}
-            className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded"
+            className="flex items-center gap-1 bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-red-700 transition-colors"
           >
-            <FileText size={18} />
-            PDF
+            <FileText size={18} /> PDF
           </button>
 
           <button
             onClick={handleExcel}
-            className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded"
+            className="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-green-700 transition-colors"
           >
-            <FileSpreadsheet size={18} />
-            Excel
+            <FileSpreadsheet size={18} /> Excel
           </button>
-
         </div>
       </div>
 
-
       {/* BUSCADOR */}
-      <input
-        type="text"
-        placeholder="Buscar solicitud..."
-        className="border px-3 py-1 rounded mb-4 w-full max-w-md"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar solicitud por cliente, auto, detalle o monto..."
+          className="border border-gray-300 px-3 py-2 rounded w-full max-w-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
       {/* TABLA */}
-      <DataTable
-        data={filteredSoldepo}
-        columns={columns}
-      />
-
+      <DataTable data={filteredSoldepo} columns={columns} />
 
       {/* MODAL */}
       <SoldepoModal
         open={open}
         mode={mode}
-        form={form}
+        form={form as any}
         onChange={handleChange}
         onSubmit={handleSubmit}
-        onClose={() => setOpen(false)}
+        onClose={handleCloseModal}
         message={message}
         messageType={messageType}
         branches={branches}
         employees={employees}
         customers={customers}
         cars={cars}
+        id_role={profile?.id_role} // 👈 Pasado el id_role para activar el bloqueo de sucursal
       />
-
     </div>
   )
 }
