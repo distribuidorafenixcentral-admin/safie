@@ -69,7 +69,9 @@ export const useEmployees = (search: string) => {
       e.ci.toLowerCase().includes(search.toLowerCase()) ||
       (e.reference ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (e.branch?.name_branch ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      (e.role?.role ?? "").toLowerCase().includes(search.toLowerCase())
+      (e.role?.role ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (e.celphone ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (e.celphone_ref ?? "").toLowerCase().includes(search.toLowerCase())
     )
   }, [employees, search])
 

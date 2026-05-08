@@ -12,6 +12,10 @@ type Props = {
 
   branches: { id: number; name_branch: string }[]
   roles: { id: number; role: string }[]
+
+  // 💡 Nuevas propiedades necesarias para discriminar el Select
+  idRoleCurrentUser?: number | null
+  idBranchCurrentUser?: number | null
 }
 
 export default function EmployeeModal(props: Props) {
@@ -21,6 +25,9 @@ export default function EmployeeModal(props: Props) {
     props.mode === "create"
       ? "REGISTRO DE PERSONAL"
       : "EDITAR PERSONAL"
+
+  // 🧠 Evaluamos si el usuario es Rol 3 (Administrador de sucursal)
+  const isBranchManager = props.idRoleCurrentUser === 3
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-10">
@@ -109,44 +116,83 @@ export default function EmployeeModal(props: Props) {
             />
           </div>
 
-         {/* Sucursal */}
+         {/* Sucursal (Discriminada por Rol) */}
           <div className="flex flex-col gap-1">
-          <label className="text-sm font-semibold italic">
+            <label className="text-sm font-semibold italic">
               Sucursal
             </label>
-          <select
-            name="id_branch"
-            value={props.form.id_branch || ""}
-            onChange={props.onChange}
-            className="border p-1 rounded-sm pl-2"
-          >
-            <option value="">Seleccione la sucursal</option>
-            {props.branches.map(b => (
-              <option key={b.id} value={String(b.id)}>
-                {b.name_branch}
-              </option>
-            ))}
-          </select>
-</div>
-          {/* Rol */}
-            <div className="flex flex-col gap-1">
-           <label className="text-sm font-semibold italic">
-              Cargo
-            </label>
-          <select
-            name="id_role"
-            value={props.form.id_role || ""}
-            onChange={props.onChange}
-            className="border p-1 rounded-sm pl-2"
-          >
-            <option value="">Seleccione el cargo</option>
-            {props.roles.map(r => (
-              <option key={r.id} value={String(r.id)}>
-                {r.role}
-              </option>
-            ))}
-          </select>
+            <select
+              name="id_branch"
+              // 🔥 Si es Rol 3 y está creando, fuerza su id_branch de sesión. Si no, usa el valor del formulario.
+              value={isBranchManager && props.mode === "create" ? String(props.idBranchCurrentUser) : (props.form.id_branch || "")}
+              onChange={props.onChange}
+              // 🔒 Si es Rol 3, el select queda completamente deshabilitado y bloqueado con fondo gris
+              disabled={isBranchManager}
+              className="border p-1 rounded-sm pl-2 disabled:bg-gray-100 disabled:text-gray-600 disabled:cursor-not-allowed"
+            >
+              {isBranchManager ? (
+                /* 🏢 Escenario Rol 3: Solo renderiza su sucursal correspondiente */
+                props.branches
+                  .filter(b => b.id === props.idBranchCurrentUser)
+                  .map(b => (
+                    <option key={b.id} value={String(b.id)}>
+                      {b.name_branch}
+                    </option>
+                  ))
+              ) : (
+                /* 🌍 Escenario Rol 1 o 2: Renderiza el listado completo de sucursales */
+                <>
+                  <option value="">Seleccione la sucursal</option>
+                  {props.branches.map(b => (
+                    <option key={b.id} value={String(b.id)}>
+                      {b.name_branch}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
           </div>
+{/* Cargo / Rol (Discriminado por Rol del usuario actual) */}
+<div className="flex flex-col gap-1">
+  <label className="text-sm font-semibold italic">
+    Cargo
+  </label>
+  <select
+    name="id_role"
+    // 🔥 Si es Rol 3 y está creando, fuerza el rol 5 (Asesor de ventas). Si no, usa el del formulario.
+    value={isBranchManager && props.mode === "create" ? "5" : (props.form.id_role || "")}
+    onChange={props.onChange}
+    // 🔒 Si es Rol 3, bloqueamos el select para que no pueda cambiarlo por código o error
+    disabled={isBranchManager}
+    className="border p-1 rounded-sm pl-2 disabled:bg-gray-100 disabled:text-gray-600 disabled:cursor-not-allowed"
+  >
+    {isBranchManager ? (
+      /* 💼 Escenario Rol 3: Solo renderiza la opción de Asesor de Ventas (ID 5) */
+      props.roles
+        .filter(r => r.id === 5)
+        .map(r => (
+          <option key={r.id} value={String(r.id)}>
+            {r.role}
+          </option>
+        ))
+    ) : (
+      /* 🌍 Escenario Rol 1 o 2: Renderiza todos los cargos disponibles */
+      <>
+        <option value="">Seleccione el cargo</option>
+        {props.roles.map(r => (
+          <option key={r.id} value={String(r.id)}>
+            {r.role}
+          </option>
+        ))}
+      </>
+    )}
+  </select>
+</div>
+
+        
+
+
+
 
           {/* Referencia */}
           <div className="flex flex-col gap-1">
@@ -174,7 +220,6 @@ export default function EmployeeModal(props: Props) {
             />
           </div>
 
-      
         </div>
 
         {/* BOTONES */}

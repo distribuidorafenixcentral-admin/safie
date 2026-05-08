@@ -36,7 +36,16 @@ export default function Employees() {
 
   // 🔍 búsqueda
   const [search, setSearch] = useState("")
-  const { filteredEmployees, addEmployee, editEmployee, removeEmployee } = useEmployees(search)
+  
+  // 💡 Extraemos los datos del usuario logueado calculados por el Hook
+  const { 
+    filteredEmployees, 
+    addEmployee, 
+    editEmployee, 
+    removeEmployee,
+    idRoleCurrentUser,
+    idBranchCurrentUser 
+  } = useEmployees(search)
 
   // 🔹 catálogos
   const [branches, setBranches] = useState<Branch[]>([])
@@ -101,8 +110,10 @@ export default function Employees() {
 
   // 📌 SUBMIT
   const handleSubmit = async () => {
+    // 🧠 Determinamos la sucursal final: Si es Rol 3, forzamos sucursal de sesión. Si no, tomamos la del select.
+    const finalBranchId = idRoleCurrentUser === 3 ? String(idBranchCurrentUser) : form.id_branch
 
-    if (!form.ci || !form.name || !form.id_branch || !form.id_role) {
+    if (!form.ci || !form.name || !finalBranchId || !form.id_role) {
       setMessage("Campos obligatorios incompletos")
       setMessageType("error")
       return
@@ -119,7 +130,7 @@ export default function Employees() {
             celphone: form.celphone,
             start_date: form.start_date || null,
 
-            id_branch: form.id_branch ? Number(form.id_branch) : null,
+            id_branch: finalBranchId ? Number(finalBranchId) : null,
             id_role: form.id_role ? Number(form.id_role) : null,
 
             reference: form.reference || null,
@@ -138,7 +149,7 @@ export default function Employees() {
         await editEmployee(selected.id, {
           name: form.name,
           celphone: form.celphone,
-          id_branch: Number(form.id_branch),
+          id_branch: Number(finalBranchId),
           id_role: Number(form.id_role),
           reference: form.reference,
           celphone_ref: form.celphone_ref
@@ -204,7 +215,7 @@ export default function Employees() {
 
   // 📌 EXPORTACIONES
   const handleExcel = () => {
-    exportEmployeesToExcel(filteredEmployees)
+    exportEmployeesToExcel(filteredEmployees, idRoleCurrentUser)
   }
 
   const handlePDF = () => {
@@ -215,10 +226,11 @@ export default function Employees() {
       user?.email ||
       "Sistema"
 
-    exportEmployeesToPDF(filteredEmployees, currentUser)
+    exportEmployeesToPDF(filteredEmployees, currentUser, idRoleCurrentUser)
   }
 
-  const columns = getColumnsEmployees(handleEdit, handleDelete)
+  // 🔥 Pasamos el idRoleCurrentUser para ocultar dinámicamente la columna sucursal a los Rol 3
+  const columns = getColumnsEmployees(handleEdit, handleDelete, idRoleCurrentUser)
 
   return (
     <div>
@@ -231,17 +243,32 @@ export default function Employees() {
         </h2>
 
         <div className="flex gap-3">
+<button
+  onClick={() => {
+    setMode("create")
+    resetForm()
+    
+    // 🔥 Si es Rol 3, inyectamos directamente su sucursal y el cargo 5 (Asesor de ventas)
+    if (idRoleCurrentUser === 3) {
+      setValues({
+        ci: "",
+        name: "",
+        celphone: "",
+        start_date: "",
+        id_branch: String(idBranchCurrentUser),
+        id_role: "5", // 👈 Forzamos el rol de asesor de ventas inmediatamente
+        reference: "",
+        celphone_ref: ""
+      })
+    }
+    
+    setOpen(true)
+  }}
+  className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm"
+>
+  <Plus size={18}/> Nuevo
+</button>
 
-          <button
-            onClick={() => {
-              setMode("create")
-              resetForm()
-              setOpen(true)
-            }}
-            className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm"
-          >
-            <Plus size={18}/> Nuevo
-          </button>
 
           <button
             onClick={handlePDF}
@@ -284,6 +311,9 @@ export default function Employees() {
         messageType={messageType}
         branches={branches}
         roles={roles}
+        // 🔥 Inyectamos las nuevas propiedades para discriminar el selector del modal
+        idRoleCurrentUser={idRoleCurrentUser}
+        idBranchCurrentUser={idBranchCurrentUser}
       />
 
     </div>
