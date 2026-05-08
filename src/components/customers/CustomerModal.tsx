@@ -9,6 +9,11 @@ type Props = {
   onClose: any
   message: string
   messageType: "error" | "success" | ""
+
+  // Catálogo e información de sesión
+  branches: { id: number; name_branch: string }[]
+  idRoleCurrentUser?: number | null
+  idBranchCurrentUser?: number | null
 }
 
 export default function CustomerModal(props: Props) {
@@ -19,6 +24,9 @@ export default function CustomerModal(props: Props) {
     props.mode === "create"
       ? "REGISTRO DE CLIENTE"
       : "EDITAR CLIENTE"
+
+  // Evaluamos el rol del usuario administrador de sucursal
+  const isBranchManager = props.idRoleCurrentUser === 3
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-16">
@@ -45,8 +53,8 @@ export default function CustomerModal(props: Props) {
           </div>
         )}
 
-        {/* FORMULARIO */}
-        <div className="grid grid-cols- gap-4 ml-16 mr-16">
+        {/* FORMULARIO - 🛠️ Corregido grid-cols- a grid-cols-1 para evitar bloqueos del DOM */}
+        <div className="grid grid-cols-1 gap-4 ml-16 mr-16">
 
           {/* Cédula de identidad */}
           <div className="flex flex-col gap-1">
@@ -64,7 +72,8 @@ export default function CustomerModal(props: Props) {
               autoFocus={props.mode === "create"} 
             />
           </div>
-           {/* Nombre */}
+
+          {/* Nombre */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-black mb-1 italic">
               Nombre de Cliente
@@ -94,7 +103,8 @@ export default function CustomerModal(props: Props) {
               autoFocus={props.mode === "edit"}              
             />
           </div>
-                   {/* Referencia */}
+
+          {/* Referencia */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-black mb-1 italic">
               Referencia
@@ -107,36 +117,70 @@ export default function CustomerModal(props: Props) {
               placeholder="00000000"                         
             />
           </div>
-          {/* Departamento */}
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-semibold text-black mb-1 italic">
-                Departamento
-              </label>
 
-              <select
-                name="ciudad"
-                value={props.form.ciudad}
-                onChange={props.onChange}
-                className="border p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-400 pl-2"
-              >
-                <option value="">Seleccione un departamento</option>
-                <option value="La Paz">La Paz</option>
-                <option value="Cochabamba">Cochabamba</option>
-                <option value="Santa Cruz">Santa Cruz</option>
-                <option value="Oruro">Oruro</option>
-                <option value="Potosí">Potosí</option>
-                <option value="Chuquisaca">Chuquisaca</option>
-                <option value="Tarija">Tarija</option>
-                <option value="Beni">Beni</option>
-                <option value="Pando">Pando</option>
-              </select>
-              </div>
+          {/* Departamento */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-black mb-1 italic">
+              Departamento
+            </label>
+            <select
+              name="ciudad"
+              value={props.form.ciudad}
+              onChange={props.onChange}
+              className="border p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-400 pl-2"
+            >
+              <option value="">Seleccione un departamento</option>
+              <option value="La Paz">La Paz</option>
+              <option value="Cochabamba">Cochabamba</option>
+              <option value="Santa Cruz">Santa Cruz</option>
+              <option value="Oruro">Oruro</option>
+              <option value="Potosí">Potosí</option>
+              <option value="Chuquisaca">Chuquisaca</option>
+              <option value="Tarija">Tarija</option>
+              <option value="Beni">Beni</option>
+              <option value="Pando">Pando</option>
+            </select>
+          </div>
+
+          {/* 🏢 Sucursal (Control Tolerante Asíncrono) */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-black mb-1 italic">
+              Sucursal
+            </label>
+            <select
+              name="id_branch"
+              // Forzamos el ID de sucursal correspondiente según el modo y el rol
+              value={isBranchManager && props.mode === "create" ? String(props.idBranchCurrentUser) : (props.form.id_branch || "")}
+              onChange={props.onChange}
+              disabled={isBranchManager}
+              className="border p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-400 pl-2 
+              disabled:bg-gray-100 disabled:text-gray-600 disabled:cursor-not-allowed"
+            >
+              {isBranchManager ? (
+                /* Escenario Rol 3: Filtro tolerante con encadenamiento opcional */
+                props.branches?.filter(b => b.id === props.idBranchCurrentUser).map(b => (
+                  <option key={b.id} value={String(b.id)}>
+                    {b.name_branch}
+                  </option>
+                ))
+              ) : (
+                /* Escenario Rol 1 o 2: Desplegable global completo */
+                <>
+                  <option value="">Seleccione la sucursal</option>
+                  {props.branches?.map(b => (
+                    <option key={b.id} value={String(b.id)}>
+                      {b.name_branch}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+          </div>
 
         </div>
 
         {/* BOTONES */}
         <div className="flex justify-end gap-3 mt-12">
-
           <button
             onClick={props.onClose}
             className="flex items-center gap-2 px-2 py-2 rounded bg-red-600 text-white hover:bg-red-800 transition text-sm"
@@ -152,7 +196,6 @@ export default function CustomerModal(props: Props) {
             <Save size={18} />
             Guardar
           </button>
-
         </div>
 
       </div>

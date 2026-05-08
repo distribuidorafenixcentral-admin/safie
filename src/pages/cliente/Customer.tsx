@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+
 import { useCustomers } from "@/hooks/useCustomers"
 import { useForm } from "@/hooks/useForm"
 
@@ -7,46 +8,47 @@ import { getColumnsCustomers } from "@/components/customers/columns"
 
 import { useConfirm } from "@/context/ConfirmContext"
 import { useToast } from "@/context/ToastContext"
-
-import { Plus, FileText, FileSpreadsheet } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 
-import { checkDuplicateCustomer, createCustomer, deleteCustomer, updateCustomer } from "@/services/customerService"
-import type { Customer } from "@/types/customer"
-import { exportCustomersToPDF } from "@/utils/export/pdf/customerExportpdf"
-import { exportCustomerToExcel } from "@/utils/export/excel/customerExport"
+import { Plus, FileText, FileSpreadsheet } from "lucide-react"
+
 import CustomerModal from "@/components/customers/CustomerModal"
 
+import { getBranches } from "@/services/branchService"
+import { createCustomer, updateCustomer, deleteCustomer } from "@/services/customerService"
 
+import { exportCustomersToPDF } from "@/utils/export/pdf/customerExportpdf"
+import { exportCustomerToExcel } from "@/utils/export/excel/customerExport"
 
-export default function Customer() {
+import type { CustomerWithRelations } from "@/types/customer"
 
-  // 🔍 búsqueda
+type Branch = {
+  id: number
+  name_branch: string
+}
+
+export default function Customers() {
+
   const [search, setSearch] = useState("")
-  const { filteredCustomers } = useCustomers(search)
-  // 🔹 UI
+  
+  const { 
+    filteredCustomers, 
+    fetchCustomers,
+    idRoleCurrentUser,
+    idBranchCurrentUser
+  } = useCustomers(search)
+
+  const [branches, setBranches] = useState<Branch[]>([])
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<"create" | "edit">("create")
-  const [selected, setSelected] = useState<Customer | null>(null)
-  // 🔹 mensajes
+  const [selected, setSelected] = useState<CustomerWithRelations | null>(null)
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState<"error" | "success" | "">("")
 
-    useEffect(() => {
-    if (!message) return
-
-    const timer = setTimeout(() => {
-      setMessage("")
-      setMessageType("")
-    }, 2000)
-
-    return () => clearTimeout(timer)
-  }, [message])
-
   const confirm = useConfirm()
   const showToast = useToast()
+  const { profile, user } = useAuth()
 
-  // 🔹 form
   const {
     form,
     handleChange,
@@ -57,64 +59,91 @@ export default function Customer() {
       ci: "",
       name: "",
       celphone: "",
+      reference: "",
       ciudad: "",
-      reference: ""
+      id_branch: ""
     }
   })
 
-  // 📌 Recuperamos datos de la sesion
-  const { profile, user} = useAuth()
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const b = await getBranches()
+        setBranches(b)
+      } catch (err) {
+        console.error("Error al cargar sucursales:", err)
+      }
+    }
+    fetchData()
+  }, [])
 
-  // 📌 SUBMIT (SIN fetch → realtime)
+  useEffect(() => {
+    if (!message) return
+
+    const timer = setTimeout(() => {
+      setMessage("")
+      setMessageType("")
+    }, 5000) // 5 segundos para que de tiempo a leer el mensaje largo de advertencia
+
+    return () => clearTimeout(timer)
+  }, [message])
+
+  // 📌 SUBMIT
   const handleSubmit = async () => {
+    const finalBranchId = idRoleCurrentUser === 3 ? String(idBranchCurrentUser) : form.id_branch
 
-    if (!form.ci || !form.ciudad || !form.name || !form.celphone || !form.reference) {
-      setMessage("Todos los campos son obligatorios")
+    if (!form.ci || !form.name || !finalBranchId || !form.ciudad) {
+      setMessage("Campos obligatorios incompletos")
       setMessageType("error")
       return
     }
 
     try {
+      let isCoincidence = false
 
       if (mode === "create") {
-        const result = await checkDuplicateCustomer(form.ci)
+        const result = await createCustomer({
+          ci: form.ci,
+          name: form.name,
+          celphone: form.celphone,
+          reference: form.reference,
+          ciudad: form.ciudad,
+          id_branch: finalBranchId ? Number(finalBranchId) : null,
+          status: 1
+        })
 
-        if (result.exists) {
-          setMessage("El cliente ya existe")
-          setMessageType("error")
-          return
+        if (result.hasCoincidence) {
+          isCoincidence = true
+          setMessage(`El cliente ya existe en la sucursal "${result.originalBranch}". Por favor, consúltelo con Administración.`)
+          setMessageType("error") // Banner rojo preventivo
+        } else {
+          setMessage("Cliente registrado correctamente")
+          setMessageType("success") // Banner verde de éxito
         }
-        if (result.inactive) {
-          setMessage("El cliente ya existe pero esta en estado inactivo. Contacte a soporte técnico")
-          setMessageType("error")
-          return
-        }
-
-        await createCustomer(form)
-        setMessage("Guardado correctamente")
       }
 
       if (mode === "edit" && selected) {
         await updateCustomer(selected.id, {
           name: form.name,
           celphone: form.celphone,
-          ciudad: form.ciudad,
           reference: form.reference,
+          ciudad: form.ciudad,
+          id_branch: Number(finalBranchId)
         })
-        setMessage("Actualizado correctamente")
+        setMessage("Cliente actualizado correctamente")
+        setMessageType("success")
       }
 
-      setMessageType("success")
-
-      // 🔥 SIN fetch → realtime actualiza
+      // ⏱️ Si hay coincidencia, dejamos el modal abierto por 5 segundos para lectura. Si no, lo cerramos rápido.
+      const delayTime = isCoincidence ? 5000 : 1200
 
       setTimeout(() => {
         setOpen(false)
         resetForm()
         setSelected(null)
         setMode("create")
-        setMessage("")
-      }, 1200)
+        fetchCustomers()
+      }, delayTime) // 🛠️ CORREGIDO: Añadidos el cierre del paréntesis y la llave del setTimeout que hacían falta
 
     } catch {
       setMessage("Error en proceso")
@@ -122,108 +151,96 @@ export default function Customer() {
     }
   }
 
-  // 📌 EDIT
-  const handleEdit = (row: Customer) => {
+  const handleEdit = (row: CustomerWithRelations) => {
     setSelected(row)
     setMode("edit")
-    setValues(row)
+
+    setValues({
+      ci: row.ci || "",
+      name: row.name || "",
+      celphone: row.celphone || "",
+      reference: row.reference || "",
+      ciudad: row.ciudad || "",
+      id_branch: row.id_branch ? String(row.id_branch) : ""
+    })
+
     setOpen(true)
   }
 
-  // 📌 DELETE con confirm + toast (
-  const handleDelete = (row: Customer) => {
-
+  const handleDelete = (row: CustomerWithRelations) => {
     confirm({
-      title: "Eliminar",
-      message: "¿Seguro que deseas eliminar este registro?",
-      confirmText: "Eliminar",
-
+      title: "Dar de baja",
+      message: "¿Seguro que deseas dar de baja a este cliente?",
+      confirmText: "Confirmar",
       onConfirm: async () => {
         try {
           await deleteCustomer(row.id)
-
-          showToast("Proceso concluido con éxito ✅", "success")
-
-          // 🔥 SIN fetch → realtime
-
+          showToast("Cliente dado de baja ✅", "success")
+          fetchCustomers()
         } catch {
-          showToast("Error al eliminar", "error")
+          showToast("Error en proceso", "error")
         }
       }
     })
   }
 
-  // 📌 Exportar a Excel => reporte general del lo filtrado en la tabla que se muestra
   const handleExcel = () => {
-    exportCustomerToExcel(filteredCustomers)
-  } 
+    exportCustomerToExcel(filteredCustomers, idRoleCurrentUser)
+    showToast("Documento Excel generado 📊", "success")
+  }
 
-  // 📌 Exportar a PDF => reporte general de lo filtrado en la tabla que se muestra
-const handlePDF = () => {
+  const handlePDF = () => {
+    const currentUser = profile?.name || profile?.user || user?.email || "Sistema"
+    exportCustomersToPDF(filteredCustomers, currentUser, idRoleCurrentUser)
+    showToast("Documento PDF generado 📄", "success")
+  }
 
-  const currentUser =
-    profile?.name ||
-    profile?.user ||
-    user?.email ||
-    "Sistema"
-
-  exportCustomersToPDF(filteredCustomers, currentUser)
-}
-
-  const columns = getColumnsCustomers(handleEdit, handleDelete)
+  const columns = getColumnsCustomers(handleEdit, handleDelete, idRoleCurrentUser)
 
   return (
     <div>
-
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-2">
-
-        <h2 className="text-xl font-bold italic">
-          REGISTO DE CLIENTES
-        </h2>
-
+        <h2 className="text-xl font-bold italic">REGISTRO DE CLIENTES</h2>
         <div className="flex gap-3">
-
           <button
             onClick={() => {
               setMode("create")
               resetForm()
+              if (idRoleCurrentUser === 3 && idBranchCurrentUser) {
+                setValues({
+                  ci: "",
+                  name: "",
+                  celphone: "",
+                  reference: "",
+                  ciudad: "",
+                  id_branch: String(idBranchCurrentUser)
+                })
+              }
               setOpen(true)
             }}
             className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm"
           >
             <Plus size={18}/> Nuevo
           </button>
-
-          <button
-            onClick={handlePDF}
-            className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded"
-          >
+          <button onClick={handlePDF} className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded">
             <FileText size={18}/> PDF
           </button>
-
-          <button
-            onClick={handleExcel}
-            className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded"
-          >
+          <button onClick={handleExcel} className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded">
             <FileSpreadsheet size={18}/> Excel
-          </button>         
-        </div>   
+          </button>
+        </div>
       </div>
 
-      {/* 🔍 BUSCADOR */}
       <input
         type="text"
-        placeholder="Buscar..."
+        placeholder="Buscar cliente por nombre, cédula, celular, ciudad o sucursal..."
         className="border px-3 py-1 rounded mb-4 w-full max-w-md"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      {/* TABLA */}
       <DataTable data={filteredCustomers} columns={columns} />
 
-      {/* MODAL */}
       <CustomerModal
         open={open}
         mode={mode}
@@ -233,8 +250,10 @@ const handlePDF = () => {
         onClose={() => setOpen(false)}
         message={message}
         messageType={messageType}
+        branches={branches}
+        idRoleCurrentUser={idRoleCurrentUser}
+        idBranchCurrentUser={idBranchCurrentUser}
       />
-
     </div>
   )
 }
