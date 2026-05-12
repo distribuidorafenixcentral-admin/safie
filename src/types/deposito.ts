@@ -2,6 +2,7 @@
 export interface Deposito {
   id: number
   created_at: string
+  confirmed_at: string | null
 
   // Relaciones principales
   id_type_transaction: number
@@ -12,98 +13,93 @@ export interface Deposito {
   id_status: number
   id_cuenta: number | null
 
-  // Datos financieros
+  // Datos financieros y de comisión
   amount: number
   costo: number | null
+  id_commission_status: number | null
+  commission_paid_amount: number | null
+  commission_payment_id: number | null
+  commission_note: string | null
 
   // Datos comerciales
-  type_sale: string | null
+  type_sale?: string | null
   type_pay: string | null
   detail: string
+
+  // Otros campos de la tabla
+  total_calculated: number | null
+  discount: number | null
+  id_restitution_status: number | null
+  restitution_amount: number | null
+  restitution_parent_id: number | null
+  restitution_note: string | null
+  restitution_discount: number | null
 }
 
 // 🟢 Para confirmar / actualizar depósito
 export interface DepositoUpdate {
-  id_branch?: number
-  id_employee?: number
-  id_customer?: number | null
-  id_car?: number | null
-
-  // 🏦 Cuenta destino (obligatoria según tipo de pago)
-  id_cuenta?: number | null
-
+  type_pay?: string | null
+  id_cuenta?: number | null // Obligatorio en la interfaz de usuario si type_pay != 'Efectivo'
+  id_status?: 2 | 4 // 2 = Confirmado, 4 = Dado de baja
+  confirmed_at?: string // NOW() enviado desde el cliente o manejado en el service
+  
+  // Datos de comisión obligatorios al confirmar (id_status = 2)
+  id_commission_status?: 1 | null
+  commission_paid_amount?: number | null // Será igual al amount final
+  
+  // Permitir modificaciones opcionales al confirmar si el negocio lo requiere
   amount?: number
   costo?: number | null
-
-  type_sale?: string | null
-  type_pay?: string | null
   detail?: string
-
-  // Estado:
-  // 1 = pendiente
-  // 2 = pagado / confirmado
-  // 3 = rechazado
-  // 4 = baja / eliminado
-  id_status?: number
 }
 
-// 🔗 Relaciones completas
+// 🔗 Relaciones completas para listados y asignaciones directas
 export interface DepositoWithRelations extends Deposito {
-
   // 🏢 Sucursal
-  branches?: {
+  branches: {
     id: number
-    name_branch: string
+    name_branch: string // Alineado con la tabla branches
   } | null
 
   // 👤 Empleado
-  employees?: {
+  employees: {
     id: number
-    name: string
+    name: string // Alineado con la tabla employees
   } | null
 
   // 👥 Cliente
-  customers?: {
+  customers: {
     id: number
-    name: string
+    name: string // Alineado con la tabla customers
   } | null
 
   // 🚗 Vehículo
-  cars?: {
+  cars: {
     id: number
-    name: string
-    cost: number
+    name: string // Ajustado al formato estándar de tus relaciones
+    cost: number | null // Sincronizado con el campo costo de la transacción
     modelo: string
     marca: string
   } | null
 
   // 📄 Tipo de transacción
-  type_transaction?: {
+  type_transaction: {
     id: number
     description: string
-    type_trans?: string
   } | null
 
   // 📌 Estado
-  status_transaction?: {
+  status_transaction: {
     id: number
     status: string
   } | null
 
   // 🏦 Cuenta bancaria destino
-  cuentas?: {
+  cuentas: {
     id: number
-
-    // Número de cuenta
     numero_cta: string
-
-    // Banco
     banco: string
-
-    // Titular
     titular: string
-
-    // Estado de cuenta
     status: number
   } | null
 }
