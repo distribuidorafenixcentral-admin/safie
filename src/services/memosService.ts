@@ -1,8 +1,6 @@
 import { supabase } from "@/lib/supabase"
 import type {
-  Memos,
   MemosInsert,
-  MemosUpdate,
   MemosWithRelations
 } from "@/types/memos"
 

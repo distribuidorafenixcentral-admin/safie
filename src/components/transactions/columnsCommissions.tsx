@@ -4,42 +4,57 @@ import { Eye } from "lucide-react"
 
 const columnHelper = createColumnHelper<CommissionGroup>()
 
-export const getColumnsCommissions = (onView: any) => [
+export const getColumnsCommissions = (
+  onView: (group: CommissionGroup) => void
+) => [
 
-  // N°
+  // 🔹 N° Correlativo
   columnHelper.display({
     id: "index",
     header: "N°",
-    cell: ({ row }) => row.index + 1
+    cell: ({ row }) => (
+      <span className="text-gray-500 font-medium">{row.index + 1}</span>
+    )
   }),
 
-  // Sucursal
+  // 🔹 Sucursal
   columnHelper.accessor("branch_name", {
-    header: "Sucursal"
+    header: "Sucursal",
+    cell: ({ getValue }) => <span className="font-medium text-slate-700">{getValue()}</span>
   }),
 
-  // Empleado
+  // 🔹 Empleado
   columnHelper.accessor("employee_name", {
-    header: "Empleado"
+    header: "Empleado",
+    cell: ({ getValue }) => <span className="font-semibold text-blue-900">{getValue()}</span>
   }),
 
-  // Cantidad de depósitos
+  // 🔹 Cantidad de depósitos (Visualmente destacado)
   columnHelper.accessor("total_deposits", {
-    header: "Depósitos"
+    header: "Depósitos Pendientes",
+    cell: ({ getValue }) => (
+      <div className="flex justify-center">
+        <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200">
+          {getValue()}
+        </span>
+      </div>
+    )
   }),
 
-  // Acción
+  // 🔹 Acción (Ver detalle / Liquidar)
   columnHelper.display({
     id: "acciones",
     header: "Acción",
     cell: ({ row }) => (
-      <button
-        onClick={() => onView(row.original)}
-        className="text-blue-700"
-      >
-        <Eye size={18} />
-      </button>
+      <div className="flex justify-center">
+        <button
+          onClick={() => onView(row.original)}
+          className="p-1.5 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200"
+          title="Ver detalle de comisiones"
+        >
+          <Eye size={18} />
+        </button>
+      </div>
     )
   })
-
 ]
