@@ -135,19 +135,19 @@ export default function CommissionModal(props: Props) {
 
             {/* RESUMEN FINANCIERO */}
             <div className="flex flex-col justify-end items-end space-y-2 pb-2">
-              <div className="flex justify-between w-full max-w-[250px] text-slate-600">
+              <div className="flex justify-between w-full max-w-150 text-slate-600">
                 <span>Comisiones seleccionadas:</span>
                 <span className="font-semibold">{selectedCount}</span>
               </div>
-              <div className="flex justify-between w-full max-w-[250px] text-slate-600 border-b pb-2">
+              <div className="flex justify-between w-full max-w-150 text-slate-600 border-b pb-2">
                 <span>Total Bruto:</span>
                 <span className="font-semibold">{formatBs(props.total)}</span>
               </div>
-              <div className="flex justify-between w-full max-w-[250px] text-red-600 font-medium">
+              <div className="flex justify-between w-full max-w-150 text-red-600 font-medium">
                 <span>Descuento aplicado:</span>
                 <span>- {formatBs(discount)}</span>
               </div>
-              <div className="flex justify-between w-full max-w-[250px] pt-4">
+              <div className="flex justify-between w-full max-w-150 pt-4">
                 <span className="text-lg font-bold text-slate-800">TOTAL NETO:</span>
                 <span className="text-2xl font-black text-emerald-600">{formatBs(totalFinal)}</span>
               </div>

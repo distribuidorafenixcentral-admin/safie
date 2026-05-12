@@ -55,9 +55,9 @@ export default function Dashboard() {
         depositossem,
         depositosmes,
         balancehoy,
-        efectivohoy,
-        bancouno,
-        bancodos,
+        efectivomes,
+        bancounomes,
+        bancodosmes,
         restitucionesmes
       ] = await Promise.all([
         getTotalPersonal(),
@@ -67,29 +67,28 @@ export default function Dashboard() {
         getDepositosSemana(),
         getDepositosMes(),
         getBalanceHoy(),
-        getEfectivoMes(),
-        getBanco1Mes(),
-        getBanco2Mes(),
+        getEfectivoMes(), // Retorna: Ingresos - Gastos (Efectivo)
+        getBanco1Mes(),   // Retorna: Ingresos - Gastos (Banco 1)
+        getBanco2Mes(),   // Retorna: Ingresos - Gastos (Banco 2)
         getRestitucionMes()
       ])
 
-      setTotalPersonal(total)
-      setIngresosHoy(ingresoshoy)
-      setGastosHoy(gastoshoy)
-      setDepositosHoy(depositoshoy)
-      setDepositosSemana(depositossem)
-      setDepositosMes(depositosmes)
-      setBalanceHoy(balancehoy)
-      setEfectivoHoy(efectivohoy)
-      setBancoUno(bancouno)
-      setBancoDos(bancodos)
-      setRestitucionesMes(restitucionesmes)
+      setTotalPersonal(total || 0)
+      setIngresosHoy(ingresoshoy || 0)
+      setGastosHoy(gastoshoy || 0)
+      setDepositosHoy(depositoshoy || 0)
+      setDepositosSemana(depositossem || 0)
+      setDepositosMes(depositosmes || 0)
+      setBalanceHoy(balancehoy || 0)
+      setEfectivoHoy(efectivomes || 0)
+      setBancoUno(bancounomes || 0)
+      setBancoDos(bancodosmes || 0)
+      setRestitucionesMes(restitucionesmes || 0)
     } catch (error) {
       console.error("Error cargando dashboard:", error)
     }
   }
 
-  // 🔥 Realtime con Supabase
   useEffect(() => {
     loadData()
 
@@ -97,11 +96,7 @@ export default function Dashboard() {
       .channel("dashboard-realtime")
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "transactions",
-        },
+        { event: "*", schema: "public", table: "transactions" },
         async () => {
           await loadData()
         }
@@ -120,7 +115,6 @@ export default function Dashboard() {
       {showCards ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-          {/* 📌 INGRESOS GENERALES HOY */}
           <StatCard
             title="Ingresos HOY"
             value={`Bs. ${ingresosHoy.toLocaleString()}`}
@@ -130,7 +124,6 @@ export default function Dashboard() {
             cardBg="bg-blue-300"
           />
 
-          {/* 🔹 GASTOS HOY */}
           <StatCard
             title="Gastos HOY"
             value={`Bs. ${gastosHoy.toLocaleString()}`}
@@ -140,7 +133,6 @@ export default function Dashboard() {
             cardBg="bg-red-300"
           />
 
-          {/* 🔹 BALANCE */}
           <StatCard
             title="Balance"
             value={`Bs. ${balanceHoy.toLocaleString()}`}
@@ -150,7 +142,6 @@ export default function Dashboard() {
             cardBg="bg-yellow-300"
           />
 
-          {/* 📌 DEPÓSITOS HOY */}
           <StatCard
             title="Depósitos HOY"
             value={`Bs. ${depositosHoy.toLocaleString()}`}
@@ -160,7 +151,6 @@ export default function Dashboard() {
             cardBg="bg-green-300"
           />
 
-          {/* 📌 DEPÓSITOS SEMANA */}
           <StatCard
             title="Depósitos SEMANA"
             value={`Bs. ${depositosSemana.toLocaleString()}`}
@@ -170,7 +160,6 @@ export default function Dashboard() {
             cardBg="bg-blue-300"
           />
 
-          {/* 📌 DEPÓSITOS MES */}
           <StatCard
             title="Depósitos MES"
             value={`Bs. ${depositosMes.toLocaleString()}`}
@@ -180,7 +169,7 @@ export default function Dashboard() {
             cardBg="bg-cyan-300"
           />
 
-          {/* 📌 EFECTIVO */}
+          {/* 📌 SALDO EFECTIVO (NETO) */}
           <StatCard
             title="Efectivo"
             value={`Bs. ${efectivoHoy.toLocaleString()}`}
@@ -190,7 +179,7 @@ export default function Dashboard() {
             cardBg="bg-lime-300"
           />
 
-          {/* 📌 BANCO 1 */}
+          {/* 📌 SALDO BANCO 1 (NETO) */}
           <StatCard
             title="Banco 1"
             value={`Bs. ${bancoUno.toLocaleString()}`}
@@ -200,7 +189,7 @@ export default function Dashboard() {
             cardBg="bg-orange-300"
           />
 
-          {/* 📌 BANCO 2 */}
+          {/* 📌 SALDO BANCO 2 (NETO) */}
           <StatCard
             title="Banco 2"
             value={`Bs. ${bancoDos.toLocaleString()}`}
@@ -210,8 +199,6 @@ export default function Dashboard() {
             cardBg="bg-green-400"
           />
 
-          
-          {/* 💵 RESTITUTCIONES */}
           <StatCard
             title="Restituciones"
             value={`Bs. ${restitucionesMes.toLocaleString()}`}
@@ -221,7 +208,6 @@ export default function Dashboard() {
             cardBg="bg-red-500"
           />
 
-          {/* 📌 PERSONAL */}
           <StatCard
             title="Personal"
             value={totalPersonal.toString()}
