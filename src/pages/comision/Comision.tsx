@@ -73,7 +73,8 @@ export default function Comision() {
           calculated: totalCalculated, 
           discount: discount, 
           final: totalCalculated - discount 
-        }
+        },
+        currentUserName 
       )
 
       showToast("Comisiones pagadas y comprobante generado ✅", "success")

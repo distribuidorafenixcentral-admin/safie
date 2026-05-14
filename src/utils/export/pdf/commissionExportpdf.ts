@@ -11,7 +11,8 @@ const formatCurrency = (value: number) => {
 export const exportCommissionLiquidationToPDF = (
   items: CommissionDetail[],
   employeeName: string,
-  totals: { calculated: number; discount: number; final: number }
+  totals: { calculated: number; discount: number; final: number },
+  createdBy?: string // 👈 1. Se añade el cuarto parámetro opcional
 ) => {
   if (!items || items.length === 0) return
 
@@ -30,13 +31,20 @@ export const exportCommissionLiquidationToPDF = (
   tableBody.push(["", "", "DESCUENTOS APLICADOS:", `-${formatCurrency(totals.discount)}`, ""])
   tableBody.push(["", "", "MONTO NETO PAGADO:", formatCurrency(totals.final), ""])
   
-  // 3. Espacio para firmas (inyectado como filas al final del body)
+  // 3. Metadatos de auditoría (Usuario y Fecha de impresión)
+  if (createdBy) {
+    const currentDateTime = new Date().toLocaleString("es-BO")
+    tableBody.push(["", "", "", "", ""])
+    tableBody.push([`Procesado por: ${createdBy}`, "", "", `Fecha: ${currentDateTime}`, ""])
+  }
+
+  // 4. Espacio para firmas (inyectado como filas al final del body)
   tableBody.push(["", "", "", "", ""])
   tableBody.push(["", "", "", "", ""])
   tableBody.push(["__________________________", "", "", "__________________________", ""])
   tableBody.push(["FIRMA EMPLEADO", "", "", "RECIBIDO POR", ""])
 
-  // 4. Llamada a la utilidad global
+  // 5. Llamada a la utilidad global
   exportToPDF({
     title: `COMPROBANTE DE PAGO DE COMISIONES: ${employeeName.toUpperCase()}`,
     fileName: `Comprobante_Pago_${employeeName.replace(/\s+/g, '_')}`,
