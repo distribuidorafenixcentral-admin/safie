@@ -1,6 +1,6 @@
 import {
   ArrowLeftRight,
-  FileText, 
+  // FileText, 
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -67,7 +67,7 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
         { name: "Restituciones", path: "/dashboard/restitutions", permission: PERMISSIONS.DEVOLUCIONES},
       ]
     },
-    {
+   /*  {
       name: "Reportes",
       icon: FileText,
       children: [
@@ -80,7 +80,7 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
         { name: "Clientes", path: "/repclientes"},
         { name: "Vehiculos", path: "/repvehiculos"}
       ]
-    } 
+    }  */
   ]
 
   return (
