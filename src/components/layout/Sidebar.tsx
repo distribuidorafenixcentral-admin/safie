@@ -10,7 +10,7 @@ import {
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
-import { can, PERMISSIONS} from "@/auth"
+import { can, PERMISSIONS } from "@/auth"
 import type { Role } from "@/auth"
 
 type Props = {
@@ -18,12 +18,8 @@ type Props = {
   toggleCollapse: () => void
 }
 
-
 export default function Sidebar({ collapsed, toggleCollapse }: Props) {
-
-  // Datos del perfil
-  const { profile} = useAuth()
-
+  const { profile } = useAuth()
   const [openMenu, setOpenMenu] = useState<string | null>(null)
 
   const toggleMenu = (menu: string) => {
@@ -34,47 +30,58 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
     {
       name: "Registros",
       icon: FilePlusCorner,
-       children: [
-        { name: "Nueva Sucursal", path: "/dashboard/sucursal", permission: PERMISSIONS.CREATE_BRANCH},
-        { name: "Nuevo Personal", path: "/dashboard/personal", permission: PERMISSIONS.CREATE_PERSONAL},
-        { name: "Vehiculo", path: "/dashboard/vehiculo", permission: PERMISSIONS.CREATE_CAR},
-        { name: "Cliente", path: "/dashboard/cliente", permission: PERMISSIONS.CREATE_CUSTOMER},   
+      children: [
+        { name: "Nueva Sucursal", path: "/dashboard/sucursal", permission: PERMISSIONS.CREATE_BRANCH },
+        { name: "Nuevo Personal", path: "/dashboard/personal", permission: PERMISSIONS.CREATE_PERSONAL },
+        { name: "Vehiculo", path: "/dashboard/vehiculo", permission: PERMISSIONS.CREATE_CAR },
+        { name: "Cliente", path: "/dashboard/cliente", permission: PERMISSIONS.CREATE_CUSTOMER },   
       ]
     },
     {
       name: "Solicitudes",
       icon: PhoneCallIcon,
       children: [
-        { name: "Pago Servicios", path: "/dashboard/transaccion", permission: PERMISSIONS.CREATE_REGTRANSACTION},
-        { name: "Depósito", path: "/dashboard/regdeposito", permission: PERMISSIONS.CREATE_REGDEPOSIT}
+        { name: "Pago Servicios", path: "/dashboard/transaccion", permission: PERMISSIONS.CREATE_REGTRANSACTION },
+        { name: "Depósito", path: "/dashboard/regdeposito", permission: PERMISSIONS.CREATE_REGDEPOSIT }
       ]
     },
     {
       name: "T. Ingresos",
       icon: ArrowLeftRight,
       children: [
-        { name: "Deposito", path: "/dashboard/deposito", permission: PERMISSIONS.DEPOSITS},       
-        { name: "Memos / sanciones", path: "/dashboard/memos", permission: PERMISSIONS.MEMORANDUM}
+        { name: "Deposito", path: "/dashboard/deposito", permission: PERMISSIONS.DEPOSITS },       
+        { name: "Memos / sanciones", path: "/dashboard/memos", permission: PERMISSIONS.MEMORANDUM }
       ]
-    ,},
-      {
+    },
+    {
       name: "T. Egresos",
       icon: ArrowLeftRight,
       children: [  
         { name: "Pago Comisiones", path: "/dashboard/comisiones", permission: PERMISSIONS.PAGO_COMISION },
-        { name: "Pago Solicitudes pendientes", path: "/dashboard/pagossol", permission: PERMISSIONS.PAGO_SUELDO},
-        { name: "Compras varias", path: "/dashboard/compras", permission: PERMISSIONS.PAGO_COMPRAS},
-        { name: "Restituciones", path: "/dashboard/restitutions", permission: PERMISSIONS.DEVOLUCIONES},
+        { name: "Pago Solicitudes pendientes", path: "/dashboard/pagossol", permission: PERMISSIONS.PAGO_SOLICITUDES },
+        { name: "Compras varias", path: "/dashboard/compras", permission: PERMISSIONS.PAGO_COMPRAS },
+        { name: "Restituciones", path: "/dashboard/restitutions", permission: PERMISSIONS.RESTITUCIONES },
       ]
     },
-   {
+    {
       name: "Cierres",
       icon: FileText,
       children: [
-        { name: "Cierres", path: "/dashboard/cierres", permission: PERMISSIONS.CREATE_BRANCH }
+        { name: "Cierres", path: "/dashboard/cierres", permission: PERMISSIONS.CIERRE_CAJA }
       ]
     } 
   ]
+
+  // 🛡️ Filtrar el menú completo en base a los permisos del perfil
+  const allowedMenu = menu.filter(item => {
+    // Si la categoría no tiene hijos, se muestra por defecto
+    if (!item.children) return true;
+
+    // 🔥 Condición clave: Muestra la categoría solo si el usuario tiene permiso para al menos un hijo
+    return item.children.some(sub => 
+      !sub.permission || can(profile?.roleName as Role | undefined, sub.permission)
+    )
+  })
 
   return (
     <aside
@@ -86,96 +93,57 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
         flex flex-col
       `}
     >
-
       {/* Logo */}
-
       <div className="flex items-center justify-between p-4">
-
-        {!collapsed && (
-          <h2 className="text-xl font-bold">
-            SAFIE
-          </h2>
-        )}
-
-        <button
-          onClick={toggleCollapse}
-          className="hover:bg-gray-800 p-1 rounded"
-        >
+        {!collapsed && <h2 className="text-xl font-bold">SAFIE</h2>}
+        <button onClick={toggleCollapse} className="hover:bg-gray-800 p-1 rounded">
           {collapsed ? <ChevronRight /> : <ChevronLeft />}
         </button>
-
       </div>
 
       {/* Menu */}
-
       <nav className="flex flex-col gap-1 px-2 mt-6">
-
-        {menu.map((item, index) => {
-
+        {allowedMenu.map((item, index) => {
           const Icon = item.icon
-
           return (
-
             <div key={index}>
-
               {/* item principal */}
-
               <button
                 onClick={() => item.children && toggleMenu(item.name)}
                 className="flex items-center justify-between w-full hover:bg-gray-800 p-3 rounded-lg transition"
               >
-
                 <div className="flex items-center gap-3">
-
                   {Icon && <Icon size={20} />}
-
                   {!collapsed && item.name}
-
                 </div>
-
                 {!collapsed && item.children && (
                   <ChevronDown
                     size={16}
-                    className={`transition ${
-                      openMenu === item.name ? "rotate-180" : ""
-                    }`}
+                    className={`transition ${openMenu === item.name ? "rotate-180" : ""}`}
                   />
                 )}
-
               </button>
 
               {/* Submenu */}
-
               {!collapsed && item.children && openMenu === item.name && (
-
                 <div className="ml-8 mt-1 flex flex-col gap-1">
-
                   {item.children
-                  .filter(sub => !sub.permission || can(profile?.roleName as Role | undefined, sub.permission))
-                  .map((sub, i) => (
-
-                    <Link
+                    .filter(sub => !sub.permission || can(profile?.roleName as Role | undefined, sub.permission))
+                    .map((sub, i) => (
+                      <Link
                         key={i}
                         to={sub.path || "#"}
                         className="text-sm text-gray-300 hover:text-white hover:bg-gray-800 p-2 rounded"
                       >
                         {sub.name}
-                    </Link>
-
-                  ))}
-
+                      </Link>
+                    ))}
                 </div>
-
               )}
-
             </div>
-
           )
-
         })}
-
       </nav>
-
     </aside>
   )
 }
