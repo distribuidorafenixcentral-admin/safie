@@ -1,77 +1,78 @@
-// ============================================
-// 📌 BASE: TRANSACCIÓN (DEPÓSITOS)
-// ============================================
+// 🔹 Filtros superiores oficiales del módulo
+export type RestitutionFilterType = "TODOS" | "PAGADOS" | "DEPOSITOS"
+
+// =======================================================
+// 📌 BASE: REGISTRO DE TRANSACCIÓN (COMPATIBLE CON BD)
+// =======================================================
 export interface RestitutionTransaction {
   id: number
   created_at: string
-
-  id_type_transaction: number
-  id_branch: number
-  id_employee: number
-
-  amount: number
-  detail: string
-
-  id_status: number
-  type_pay: string
   confirmed_at: string | null
 
-  // 🔥 RESTITUCIÓN
-  id_restitution_status: number // 1 sin / 2 parcial / 3 total
-  restitution_amount: number | null
-  restitution_parent_id: number | null
-  restitution_discount: number | null
-  restitution_note: string | null
+  // Identificadores de negocio
+  id_type_transaction: number // 8 = Depósito, 9 = Restitución
+  id_branch: number
+  id_employee: number
+  id_customer: number | null
+  id_car: number | null
+  id_status: number // 2 = Confirmado siempre en este flujo
+  id_cuenta: number | null // ID de la cuenta destino de donde sale el dinero
+
+  // Datos financieros y comerciales
+  amount: number
+  detail: string
+  type_sale: string | null
+  type_pay: string | null
+
+  // Historial del módulo de comisiones
+  id_commission_status: number | null
+  commission_note: string | null
+
+  // 🔥 CAMPOS DE CONTROL PARA LA AUDITORÍA DE RESTITUCIÓN
+  id_restitution_status: number | null // 2 = Restituido por completo
+  restitution_amount: number | null     // Monto devuelto guardado en el Tipo 8
+  restitution_parent_id: number | null  // FK al nuevo registro Tipo 9 creado
+  restitution_note: string | null       // Detalle de trazabilidad
 }
 
-
-// ============================================
-// 📌 RELACIONES
-// ============================================
+// =======================================================
+// 📌 RELACIONES COMPLETAS PARA LA DATA TABLE
+// =======================================================
 export interface RestitutionWithRelations extends RestitutionTransaction {
-
-  branches?: {
+  branches: {
     id: number
     name_branch: string
   } | null
 
-  employees?: {
+  employees: {
     id: number
     name: string
   } | null
 
-  // 🔥 si tienes relación con cliente / vehículo puedes agregar luego
-  customers?: {
+  customers: {
     id: number
     name: string
   } | null
 
-  vehicles?: {
+  type_transaction: {
     id: number
-    name: string
+    description: string
   } | null
 }
 
+// =======================================================
+// 📌 PAYLOAD COMPLETO PARA EL PROCESO DE DEVOLUCIÓN (MODAL)
+// =======================================================
+export interface ProcessRestitutionPayload {
+  // Datos heredados del registro leído (Tipo 8 original)
+  originId: number
+  id_branch: number
+  id_employee: number
+  id_customer: number | null
 
-// ============================================
-// 📌 DETALLE PARA MODAL
-// ============================================
-export interface RestitutionDetail extends RestitutionWithRelations {
-
-  // UI
-  max_available: number // monto disponible para devolver
-}
-
-
-// ============================================
-// 📌 PAYLOAD PARA RESTITUIR
-// ============================================
-export interface RestitutionPayload {
-  parent_id: number
-
-  amount: number
-  discount: number
-
-  final_amount: number
-  note: string
+  // Nuevos datos recopilados desde el formulario del Modal
+  amount: number            // Monto a devolver ingresado en el nuevo input
+  detail: string            // Detalle o motivo ingresado en el nuevo input
+  type_pay: string          // Carga del nuevo input tipo de pago
+  id_cuenta: number | null  // ID del select de recursos dinámico (null si es Efectivo)
 }
