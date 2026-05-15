@@ -1,6 +1,6 @@
 import {
   ArrowLeftRight,
-  // FileText, 
+  FileText, 
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -67,20 +67,13 @@ export default function Sidebar({ collapsed, toggleCollapse }: Props) {
         { name: "Restituciones", path: "/dashboard/restitutions", permission: PERMISSIONS.DEVOLUCIONES},
       ]
     },
-   /*  {
-      name: "Reportes",
+   {
+      name: "Cierres",
       icon: FileText,
       children: [
-        { name: "Cierre diario", path: "/cierre", permission: PERMISSIONS.CREATE_BRANCH },
-        { name: "Sucursales", path: "/repsucursales" },
-        { name: "Personal", path: "/reopersonal" },
-        { name: "Movimiento General", path: "/repmovgeneral"},
-        { name: "Depósitos", path: "/repdepositos" },
-        { name: "Gastos", path: "/repgastos" },
-        { name: "Clientes", path: "/repclientes"},
-        { name: "Vehiculos", path: "/repvehiculos"}
+        { name: "Cierres", path: "/dashboard/cierres", permission: PERMISSIONS.CREATE_BRANCH }
       ]
-    }  */
+    } 
   ]
 
   return (
